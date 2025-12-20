@@ -1,0 +1,29 @@
+Day-1 run commands (exact)
+
+Note: 1>Run the docker windows app
+
+2> From repo root:
+
+cp .env.example .env
+docker-compose up --build
+
+
+3> In a second terminal:
+
+docker-compose exec api alembic upgrade head
+
+
+4> Frontend:
+
+cd frontend
+npm install
+npm start
+
+
+Validation:
+
+API: http://localhost:8000/health returns {"status":"ok"}
+
+WebSocket: frontend shows connected and echo works
+
+Day-2::
