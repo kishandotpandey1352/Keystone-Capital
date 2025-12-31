@@ -4,13 +4,13 @@ Note: 1>Run the docker windows app
 
 2> From repo root:
 
-cp .env.example .env
-docker-compose up --build
+copy .env.example .env
+docker-compose up --build #DOCKER COMMAND TO CREATE DOCKER IMAGES FROM DOCKER FILE
 
 
 3> In a second terminal:
 
-docker-compose exec api alembic upgrade head
+docker-compose exec api alembic upgrade head #Bring the database schema to the latest version.
 
 
 4> Frontend:
@@ -27,3 +27,26 @@ API: http://localhost:8000/health returns {"status":"ok"}
 WebSocket: frontend shows connected and echo works
 
 Day-2::
+Changed models and base.py in api folder
+Ran commands for db migration for alembic
+:docker-compose exec api alembic revision --autogenerate -m "add watchlists and signal snapshots"
+:docker-compose exec api alembic upgrade head
+
+2.2 - After making the changes to files and schema:
+docker-compose down #remove container --build # build new containers
+docker-compose exec api alembic revision --autogenerate -m "initial schema"
+docker-compose exec api alembic upgrade head # other terminal # latest migrations pointed by alembic
+curl -X POST http://localhost:8000/watchlists -H "Content-Type: application/json" -d "{\"name\": \"Tech Stocks\"}"
+
+To test if the backend working after running the command "docker-compose up --build" please use:
+http://localhost:8000/docs
+http://localhost:8000/health/db
+http://localhost:8000/health/celery
+
+
+2.4
+docker-compose down
+docker-compose build --no-cache
+docker-compose up
+
+
