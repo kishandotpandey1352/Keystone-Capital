@@ -1,27 +1,13 @@
-from typing import List
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel
+from datetime import datetime
 
 class WatchlistCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
+    name: str
 
-
-class WatchlistItemCreate(BaseModel):
-    symbol: str = Field(..., min_length=1, max_length=20)
-
-
-class WatchlistItemRead(BaseModel):
-    id: int
-    symbol: str
-
-    class Config:
-        from_attributes = True
-
-
-class WatchlistRead(BaseModel):
+class WatchlistOut(BaseModel):
     id: int
     name: str
-    items: List[WatchlistItemRead] = []
+    created_at: datetime
 
-    class Config:
-        from_attributes = True
+class Config:
+    from_attributes = True

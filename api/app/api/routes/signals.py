@@ -4,7 +4,7 @@ from app.db import get_db
 from celery import Celery
 import os
 from sqlalchemy import text
-
+from app.celery_client import celery_client
 
 router = APIRouter()
 

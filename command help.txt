@@ -44,9 +44,20 @@ http://localhost:8000/health/db
 http://localhost:8000/health/celery
 
 
-2.4
-docker-compose down
+2.4 creating a watch list:
+docker-compose down -v
 docker-compose build --no-cache
 docker-compose up
+
+## creating a postgres dummy db and a table to test the postgres table - watchlists
+Create a postgres db : init.sql
+Note: Files in /docker-entrypoint-initdb.d/ run only when the database is created for the first time.
+
+curl http://localhost:8000/watchlists
+curl -X POST http://localhost:8000/watchlists/1/compute
+docker-compose logs -f worker
+curl.exe -X DELETE http://localhost:8000/watchlists/1
+
+
 
 

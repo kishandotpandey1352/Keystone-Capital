@@ -15,19 +15,29 @@ SessionLocal = sessionmaker(bind=engine)
 def example_task():
     return "Worker is running"
 
-@celery_app.task(name="compute_signal")
-def compute_signal(watchlist_id: int):
-    db = SessionLocal()
-    try:
-        time.sleep(2)  # simulate work
+# @celery_app.task(name="compute_signal")
+# def compute_signal(watchlist_id: int):
+#     db = SessionLocal()
+#     try:
+#         time.sleep(2)  # simulate work
 
-        db.execute(
-            text("""
-            INSERT INTO signals (watchlist_id, value)
-            VALUES (:id, :value)
-            """),
-            {"id": watchlist_id, "value": "BUY"}
-        )
-        db.commit()
-    finally:
-        db.close()
+#         db.execute(
+#             text("""
+#             INSERT INTO signals (watchlist_id, value)
+#             VALUES (:id, :value)
+#             """),
+#             {"id": watchlist_id, "value": "BUY"}
+#         )
+#         db.commit()
+#     finally:
+#         db.close()
+@celery_app.task(name="app.tasks.compute_signal")
+def compute_signal(watchlist_id: int):
+    print(f"[TASK STARTED] Computing signal for watchlist {watchlist_id}")
+    time.sleep(5)  # simulate heavy work
+    print(f"[TASK FINISHED] Signal computed for watchlist {watchlist_id}")
+
+    return {
+        "watchlist_id": watchlist_id,
+        "status": "completed"
+    }

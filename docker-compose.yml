@@ -1,39 +1,57 @@
 version: "3.8"
 
 services:
-  api:
-    build: ./api
-    container_name: api
-    ports:
-      - "8000:8000"
-    depends_on:
-      - postgres
-      - redis
-    environment:
-      DATABASE_URL: postgresql+psycopg2://appuser:apppassword@postgres:5432/appdb
-      REDIS_URL: redis://redis:6379/0
-
-  worker:
-    build: ./worker
-    container_name: worker
-    depends_on:
-      - redis
-      - postgres
-    command: celery -A app.celery_app.celery_app worker --loglevel=info
-    environment:
-      DATABASE_URL: postgresql+psycopg2://appuser:apppassword@postgres:5432/appdb
-      REDIS_URL: redis://redis:6379/0
-
   postgres:
     image: postgres:16
+    container_name: postgres
     environment:
       POSTGRES_DB: appdb
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: apppassword
     ports:
       - "5432:5432"
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
+    container_name: redis
     ports:
       - "6379:6379"
+
+  api:
+    build: ./api
+    container_name: api
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql+psycopg2://appuser:apppassword@postgres:5432/appdb
+      REDIS_URL: redis://redis:6379/0
+    command: >
+      sh -c "
+      python -c 'from app.db.init_db import init_db; init_db()' &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "
+
+  worker:
+    build: ./worker
+    container_name: worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql+psycopg2://appuser:apppassword@postgres:5432/appdb
+      REDIS_URL: redis://redis:6379/0
+    command: celery -A app.celery_app.celery_app worker --loglevel=info

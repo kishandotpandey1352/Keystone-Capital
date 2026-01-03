@@ -1,33 +1,61 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from time import time
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy import text
-from app.db.session import engine
-from fastapi import FastAPI
-from app.api.routes import watchlists
-from app.api.routes import signals
-from celery import Celery
-import os
-from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
+from app.api.routes import watchlists, signals
 from app.db.session import get_db
+from app.api.routes import watchlists
+from app.db.session import engine
+from app.db.base import Base
+from app.db import models
+from sqlalchemy.exc import OperationalError
 
-app = FastAPI(title="Alerts MVP API")
+app = FastAPI()
 
 app.include_router(watchlists.router)
+
+# app = FastAPI(title="Alerts MVP API")
+
+# --------------------
+# Routers
+# --------------------
 app.include_router(signals.router)
 
+# --------------------
+# Health checks
+# --------------------
 
-celery_app = Celery(
-    "api",
-    broker=os.getenv("REDIS_URL", "redis://redis:6379/0"),
-)
+@app.on_event("startup")
+def startup():
+    retries = 10
+    delay = 2
 
+    for attempt in range(retries):
+        try:
+            Base.metadata.create_all(bind=engine)
+            print("Database connected and tables created")
+            break
+        except OperationalError as e:
+            print(f"Waiting for database... ({attempt + 1}/{retries})")
+            time.sleep(delay)
+    else:
+        raise RuntimeError(" Database not available after retries")
+    
+    
 @app.get("/health")
 def health():
-    # Verify DB is reachable (Day-1 sanity check)
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
     return {"status": "ok"}
 
+@app.get("/health/db")
+def db_health(db: Session = Depends(get_db)):
+    db.execute(text("SELECT 1"))
+    return {"status": "ok"}
+
+# --------------------
+# WebSocket (Phase 6 later)
+# --------------------
 @app.websocket("/ws")
 async def ws_endpoint(ws: WebSocket):
     await ws.accept()
@@ -35,19 +63,12 @@ async def ws_endpoint(ws: WebSocket):
     try:
         while True:
             data = await ws.receive_text()
-            # Day-1: echo. Later: broadcast real events.
             await ws.send_json({"type": "echo", "payload": {"text": data}})
     except WebSocketDisconnect:
-        return
-    
+        pass
 
-@app.get("/health/celery")
-def celery_health():
-    result = celery_app.send_task("health_check")
-    return {"task_id": result.id}
-
-
-@app.get("/health/db")
-def db_health(db: Session = Depends(get_db)):
-    db.execute(text("SELECT 1"))
-    return {"status": "ok"}
+app.include_router(
+    watchlists.router,
+    prefix="/watchlists",
+    tags=["watchlists"]
+)
