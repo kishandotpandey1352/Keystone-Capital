@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.db import get_db
 from celery import Celery
 import os
 from sqlalchemy import text
-from app.celery_client import celery_client
+from shared.db.session import get_db
 
 router = APIRouter()
 
@@ -12,6 +11,7 @@ celery_app = Celery(
     "api",
     broker=os.getenv("REDIS_URL", "redis://redis:6379/0"),
 )
+
 
 @router.post("/watchlists/{watchlist_id}/compute")
 def compute_signal(watchlist_id: int, db: Session = Depends(get_db)):

@@ -1,57 +1,52 @@
-version: "3.8"
-
 services:
+  api:
+    build: ./api
+    container_name: api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./shared:/app/shared
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build: ./worker
+    container_name: worker
+    env_file:
+      - .env
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      redis:
+        condition: service_started
+
   postgres:
     image: postgres:16
     container_name: postgres
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: appdb
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: apppassword
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
       interval: 5s
       timeout: 5s
       retries: 5
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   redis:
     image: redis:7
     container_name: redis
     ports:
       - "6379:6379"
-
-  api:
-    build: ./api
-    container_name: api
-    ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    environment:
-      DATABASE_URL: postgresql+psycopg2://appuser:apppassword@postgres:5432/appdb
-      REDIS_URL: redis://redis:6379/0
-    command: >
-      sh -c "
-      python -c 'from app.db.init_db import init_db; init_db()' &&
-      uvicorn app.main:app --host 0.0.0.0 --port 8000
-      "
-
-  worker:
-    build: ./worker
-    container_name: worker
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    environment:
-      DATABASE_URL: postgresql+psycopg2://appuser:apppassword@postgres:5432/appdb
-      REDIS_URL: redis://redis:6379/0
-    command: celery -A app.celery_app.celery_app worker --loglevel=info

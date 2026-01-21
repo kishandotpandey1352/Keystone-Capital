@@ -1,25 +1,24 @@
-from time import time
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
+import time
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, APIRouter
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.api.routes import watchlists, signals
-from app.db.session import get_db
-from app.api.routes import watchlists
-from app.db.session import engine
-from app.db.base import Base
-from app.db import models
+from shared.db.session import get_db
+from shared.models.watchlist import Watchlist
+from shared.db.base import Base
+from shared.db.session import engine
+from shared.models.watchlist import Watchlist
 from sqlalchemy.exc import OperationalError
 
 app = FastAPI()
-
-app.include_router(watchlists.router)
+api_router = APIRouter(prefix="/api/v1")
 
 # app = FastAPI(title="Alerts MVP API")
 
 # --------------------
 # Routers
 # --------------------
-app.include_router(signals.router)
+api_router.include_router(signals.router, tags=["signals"])
 
 # --------------------
 # Health checks
@@ -42,13 +41,13 @@ def startup():
         raise RuntimeError(" Database not available after retries")
     
     
-@app.get("/health")
+@api_router.get("/health")
 def health():
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
     return {"status": "ok"}
 
-@app.get("/health/db")
+@api_router.get("/health/db")
 def db_health(db: Session = Depends(get_db)):
     db.execute(text("SELECT 1"))
     return {"status": "ok"}
@@ -56,7 +55,7 @@ def db_health(db: Session = Depends(get_db)):
 # --------------------
 # WebSocket (Phase 6 later)
 # --------------------
-@app.websocket("/ws")
+@api_router.websocket("/ws")
 async def ws_endpoint(ws: WebSocket):
     await ws.accept()
     await ws.send_json({"type": "server_hello", "payload": {"msg": "connected"}})
@@ -67,8 +66,9 @@ async def ws_endpoint(ws: WebSocket):
     except WebSocketDisconnect:
         pass
 
-app.include_router(
+api_router.include_router(
     watchlists.router,
-    prefix="/watchlists",
     tags=["watchlists"]
 )
+
+app.include_router(api_router)

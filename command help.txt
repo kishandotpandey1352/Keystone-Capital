@@ -59,5 +59,12 @@ docker-compose logs -f worker
 curl.exe -X DELETE http://localhost:8000/watchlists/1
 
 
+Day 2: 21st Jan
+Solving the errors after splitting the files
+
+docker-compose down
+docker-compose up --build
+
+
 
 

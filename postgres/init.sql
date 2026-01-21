@@ -1,6 +1,8 @@
 CREATE TABLE IF NOT EXISTS watchlists (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    deleted_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
