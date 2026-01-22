@@ -1,0 +1,406 @@
+<div class="screen">
+  <div class="overlay" [class.show]="sidebarOpen || profileOpen" (click)="closeSidebar(); closeProfile()"></div>
+
+  <aside class="sidebar" [class.open]="sidebarOpen">
+    <div class="sidebar-header">
+      <div class="logo">K</div>
+      <div>
+        <div class="title">PrismAlpha</div>
+        <div class="subtitle">Signals & Insights</div>
+      </div>
+      <button class="icon-btn" (click)="closeSidebar()">✕</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Core</div>
+      <button
+        class="menu-pill"
+        [class.active]="currentMenu === 'our-picks'"
+        (click)="selectMenu('our-picks')"
+      >
+        ⭐ Our Picks
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'dashboard'" (click)="selectMenu('dashboard')">
+        <span class="dot gray">📊</span>
+        Dashboard
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'watchlists'" (click)="selectMenu('watchlists')">
+        <span class="dot teal">📌</span>
+        Watchlists
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'portfolio'" (click)="selectMenu('portfolio')">
+        <span class="dot navy">💼</span>
+        Portfolio
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'alerts'" (click)="selectMenu('alerts')">
+        <span class="dot orange">🔔</span>
+        Alerts
+      </button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Signals</div>
+      <button class="menu-item" [class.active]="currentMenu === 'upside-breakout'" (click)="selectMenu('upside-breakout')">
+        <span class="dot green">⬆</span>
+        Upside Breakout
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'downside-breakout'" (click)="selectMenu('downside-breakout')">
+        <span class="dot orange">⬇</span>
+        Downside Breakout
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'profitability'" (click)="selectMenu('profitability')">
+        <span class="dot gold">$</span>
+        Profitability
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'market-similarity'" (click)="selectMenu('market-similarity')">
+        <span class="dot blue">⛰</span>
+        Market Similarity
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'growth'" (click)="selectMenu('growth')">
+        <span class="dot purple">📈</span>
+        Growth
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'net-options'" (click)="selectMenu('net-options')">
+        <span class="dot violet">⚙</span>
+        Net Options Sentiment
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'net-social'" (click)="selectMenu('net-social')">
+        <span class="dot teal">💬</span>
+        Net Social Sentiment
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'technical-flow'" (click)="selectMenu('technical-flow')">
+        <span class="dot gray">📊</span>
+        Technical Flow
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'dark-pool'" (click)="selectMenu('dark-pool')">
+        <span class="dot navy">▵</span>
+        Dark Pool Rating
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'short-pressure'" (click)="selectMenu('short-pressure')">
+        <span class="dot red">⚡</span>
+        Short Pressure Rating
+      </button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Discover</div>
+      <button class="menu-item" [class.active]="currentMenu === 'screeners'" (click)="selectMenu('screeners')">
+        <span class="dot blue">🔎</span>
+        Screeners
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'market-news'" (click)="selectMenu('market-news')">
+        <span class="dot gold">📰</span>
+        Market News
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'earnings-calendar'" (click)="selectMenu('earnings-calendar')">
+        <span class="dot purple">📅</span>
+        Earnings Calendar
+      </button>
+      <button class="menu-item" [class.active]="currentMenu === 'education'" (click)="selectMenu('education')">
+        <span class="dot green">🎓</span>
+        Learn
+      </button>
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <button class="icon-btn" (click)="toggleSidebar()" (mouseenter)="sidebarOpen = true">☰</button>
+    <div class="brand">
+      <div class="logo">K</div>
+      <div>
+        <div class="title">PrismAlpha</div>
+        <div class="subtitle">Trading intelligence dashboard</div>
+      </div>
+    </div>
+
+    <div class="status">
+      <span class="pill" [class.ok]="apiStatus === 'ok'" [class.fail]="apiStatus === 'fail'">
+        API: {{ apiStatus }}
+      </span>
+      <span class="pill" [class.ok]="wsStatus === 'connected'" [class.fail]="wsStatus === 'error'">
+        WS: {{ wsStatus }}
+      </span>
+    </div>
+
+    <button class="icon-btn profile-btn" (click)="toggleProfile()">👤</button>
+  </header>
+
+  <section class="profile-panel" *ngIf="profileOpen">
+    <div class="profile-header">
+      <div class="profile-avatar">PA</div>
+      <div>
+        <div class="profile-name">PrismAlpha User</div>
+        <div class="profile-email">you@example.com</div>
+      </div>
+    </div>
+    <div class="profile-links">
+      <button class="profile-item">
+        <span>Account settings</span>
+        <span class="chev">›</span>
+      </button>
+      <button class="profile-item">
+        <span>App preferences</span>
+        <span class="chev">›</span>
+      </button>
+      <button class="profile-item">
+        <span>Notifications</span>
+        <span class="chev">›</span>
+      </button>
+      <button class="profile-item">
+        <span>Learn PrismAlpha</span>
+        <span class="chev">›</span>
+      </button>
+      <button class="profile-item">
+        <span>Support & Contact</span>
+        <span class="chev">›</span>
+      </button>
+      <button class="profile-item danger">
+        <span>Log out</span>
+        <span class="chev">›</span>
+      </button>
+    </div>
+  </section>
+
+  <ng-container *ngIf="currentMenu === 'dashboard'; else menuScreen">
+    <section class="hero">
+      <h1>Stay ahead with real-time signals</h1>
+      <p>Track watchlists, compute signals, and receive streaming alerts.</p>
+      <div class="hero-actions">
+        <button class="primary" (click)="loadWatchlists()">Refresh</button>
+        <button class="ghost" (click)="send()">Send test WS</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Create watchlist</h2>
+      <div class="row">
+        <input
+          [(ngModel)]="newWatchlistName"
+          placeholder="e.g. AI Leaders"
+          (keyup.enter)="createWatchlist()"
+        />
+        <button class="primary" (click)="createWatchlist()">Add</button>
+      </div>
+      <div class="hint">Use watchlists to group assets and run compute jobs.</div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>Watchlists</h2>
+        <span *ngIf="isLoading" class="muted">Loading…</span>
+      </div>
+
+      <div *ngIf="errorMsg" class="error">{{ errorMsg }}</div>
+
+      <div class="list" *ngIf="watchlists.length; else empty">
+        <div class="list-item" *ngFor="let w of watchlists">
+          <div class="list-main">
+            <div class="list-title">{{ w.name }}</div>
+            <div class="list-meta">#{{ w.id }} · created {{ w.created_at | date:'short' }}</div>
+          </div>
+          <div class="list-actions">
+            <button class="chip" (click)="computeSignal(w.id)">Compute</button>
+            <button class="chip danger" (click)="deleteWatchlist(w.id)">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #empty>
+        <div class="empty">No watchlists yet. Create your first one above.</div>
+      </ng-template>
+    </section>
+
+    <section class="card">
+      <h2>WebSocket monitor</h2>
+      <div class="row">
+        <input [(ngModel)]="inputText" placeholder="message" />
+        <button class="ghost" (click)="send()">Send</button>
+      </div>
+      <pre class="ws-box">{{ lastMsg | json }}</pre>
+    </section>
+  </ng-container>
+
+  <ng-template #menuScreen>
+    <section class="screen-header">
+      <h1>{{ screens[currentMenu]?.title }}</h1>
+      <p>{{ getSubtitle(currentMenu) }}</p>
+      <div class="updated">Last updated on {{ screens[currentMenu]?.updatedAt }}</div>
+    </section>
+
+    <section class="segment" *ngIf="screens[currentMenu]?.tabs?.length && currentMenu !== 'our-picks'">
+      <button
+        *ngFor="let tab of screens[currentMenu]?.tabs"
+        class="segment-btn"
+        [class.active]="currentTab === tab"
+        (click)="selectTab(tab)"
+      >
+        {{ tab }}
+      </button>
+    </section>
+
+    <section class="watchlist-page" *ngIf="currentMenu === 'watchlists'">
+      <div class="watchlist-hero">
+        <div>
+          <h2>Your watchlists</h2>
+          <p>Track groups, add tickers, and keep your ideas organized.</p>
+        </div>
+        <button class="primary">New Watchlist</button>
+      </div>
+
+      <div class="watchlist-grid">
+        <div class="watchlist-panel">
+          <div class="panel-title">My Watchlists</div>
+          <div class="panel-search">
+            <input
+              [(ngModel)]="watchlistListSearch"
+              placeholder="Search watchlists"
+            />
+          </div>
+          <div class="watchlist-list">
+            <button
+              class="watchlist-card"
+              *ngFor="let wl of filteredWatchlists"
+              [class.active]="selectedWatchlistId === wl.id"
+              (click)="selectWatchlist(wl.id)"
+            >
+              <div class="watchlist-name">
+                {{ wl.name }}
+                <span class="privacy" *ngIf="wl.isPrivate">Private</span>
+              </div>
+              <div class="watchlist-desc">{{ wl.description }}</div>
+              <div class="watchlist-meta">{{ wl.stocks.length }} stocks</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="watchlist-panel">
+          <div class="panel-title">Holdings</div>
+          <div class="panel-search">
+            <input [(ngModel)]="holdingsSearch" placeholder="Search holdings" />
+          </div>
+          <div class="holding-list" *ngIf="selectedWatchlist">
+            <div class="holding" *ngFor="let s of filteredHoldings">
+              <div>
+                <div class="holding-symbol">{{ s.symbol }}</div>
+                <div class="holding-name">{{ s.name }}</div>
+              </div>
+              <button class="chip danger" (click)="removeStockFromWatchlist(s.symbol)">
+                Remove
+              </button>
+            </div>
+            <div *ngIf="!selectedWatchlist.stocks.length" class="empty">
+              This watchlist is empty. Add tickers from the search panel.
+            </div>
+            <div *ngIf="selectedWatchlist.stocks.length && !filteredHoldings.length" class="empty">
+              No holdings match your search.
+            </div>
+          </div>
+        </div>
+
+        <div class="watchlist-panel">
+          <div class="panel-title">Find tickers</div>
+          <div class="row">
+            <input [(ngModel)]="watchlistSearch" placeholder="Search by symbol or name" />
+          </div>
+          <div class="search-results">
+            <div class="search-item" *ngFor="let s of filteredStocks">
+              <div>
+                <div class="holding-symbol">{{ s.symbol }}</div>
+                <div class="holding-name">{{ s.name }}</div>
+              </div>
+              <button class="chip" (click)="addStockToWatchlist(s)">Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="info-card"
+      *ngIf="currentMenu !== 'watchlists' && !isDescriptionHidden(currentMenu)"
+    >
+      <div class="info-icon">{{ screens[currentMenu]?.accent }}</div>
+      <div>
+        <div class="info-title">{{ getDescriptionTitle(currentMenu) }}</div>
+        <div class="info-text">{{ getDescriptionText(currentMenu) }}</div>
+      </div>
+      <button class="info-close" (click)="hideDescription(currentMenu)">✕</button>
+    </section>
+
+    <button
+      class="info-toggle"
+      *ngIf="currentMenu !== 'watchlists' && isDescriptionHidden(currentMenu)"
+      (click)="showDescription(currentMenu)"
+      (mouseenter)="showDescription(currentMenu)"
+    >
+      {{ screens[currentMenu]?.accent }} Show description
+    </button>
+
+    <section
+      class="stock-card"
+      *ngFor="let s of getStocks(currentMenu)"
+      [class.hidden]="currentMenu === 'watchlists'"
+    >
+      <div class="stock-head">
+        <div>
+          <div class="stock-symbol">{{ s.symbol }}</div>
+          <div class="stock-name">{{ s.name }}</div>
+        </div>
+        <div class="stock-price">{{ s.price }}</div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-col">
+          <div class="metric-title">LONG-TERM</div>
+          <div class="metric" *ngFor="let m of s.longTerm">
+            <span>{{ m.label }}</span>
+            <span class="metric-value" [class.up]="m.trend === 'up'" [class.down]="m.trend === 'down'">
+              {{ m.trend === 'up' ? '▲' : m.trend === 'down' ? '▼' : '' }} {{ m.value }}
+            </span>
+          </div>
+        </div>
+        <div class="metric-col">
+          <div class="metric-title">SHORT-TERM</div>
+          <div class="metric" *ngFor="let m of s.shortTerm">
+            <span>{{ m.label }}</span>
+            <span class="metric-value" [class.up]="m.trend === 'up'" [class.down]="m.trend === 'down'">
+              {{ m.trend === 'up' ? '▲' : m.trend === 'down' ? '▼' : '' }} {{ m.value }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </ng-template>
+
+  <footer
+    class="bottom-tabs"
+    *ngIf="
+      currentMenu === 'our-picks' ||
+      currentMenu === 'upside-breakout' ||
+      currentMenu === 'downside-breakout' ||
+      currentMenu === 'profitability' ||
+      currentMenu === 'market-similarity' ||
+      currentMenu === 'growth' ||
+      currentMenu === 'net-options' ||
+      currentMenu === 'net-social' ||
+      currentMenu === 'technical-flow' ||
+      currentMenu === 'dark-pool' ||
+      currentMenu === 'short-pressure'
+    "
+  >
+    <mat-tab-group
+      class="bottom-tab-group"
+      [selectedIndex]="selectedMenuIndex"
+      (selectedIndexChange)="onBottomTabChange($event)"
+      animationDuration="0ms"
+    >
+      <mat-tab *ngFor="let tab of bottomTabs">
+        <ng-template mat-tab-label>
+          <div class="bottom-tab-label">
+            <div class="bottom-tab-icon">{{ tab.icon }}</div>
+            <div class="bottom-tab-text">{{ tab.label }}</div>
+          </div>
+        </ng-template>
+      </mat-tab>
+    </mat-tab-group>
+  </footer>
+</div>

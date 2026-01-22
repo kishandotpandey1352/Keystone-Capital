@@ -65,6 +65,13 @@ Solving the errors after splitting the files
 docker-compose down
 docker-compose up --build
 
+Running the frontend app:
+From repo root:
+
+cd frontend
+npm install
+npm start
+
 
 
 

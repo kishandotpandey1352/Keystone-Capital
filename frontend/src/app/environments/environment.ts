@@ -1,4 +1,2 @@
-export const environment = {
-  apiBaseUrl: 'http://localhost:8000',
-  wsUrl: 'ws://localhost:8000/ws',
-};  
+// Deprecated: moved to core/environments/environment.ts
+export { environment } from '../core/environments/environment';
