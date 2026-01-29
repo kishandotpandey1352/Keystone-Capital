@@ -72,6 +72,10 @@ cd frontend
 npm install
 npm start
 
+## News API:
+https://finnhub.io/dashboard
+logged using gmail: kishan.pandey1352@gmail.com
+http://localhost:8000/api/v1/news/home?limit=5&max_categories=3
 
 
 

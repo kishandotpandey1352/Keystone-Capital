@@ -104,7 +104,7 @@
   </aside>
 
   <header class="topbar">
-    <button class="icon-btn" (click)="toggleSidebar()" (mouseenter)="sidebarOpen = true">☰</button>
+    <button class="icon-btn menu-btn" (click)="toggleSidebar()" (mouseenter)="sidebarOpen = true">☰</button>
     <div class="brand">
       <div class="logo">K</div>
       <div>
@@ -124,6 +124,44 @@
 
     <button class="icon-btn profile-btn" (click)="toggleProfile()">👤</button>
   </header>
+
+  <nav class="top-nav">
+    <button
+      class="top-nav-item"
+      [class.active]="currentMenu === 'our-picks'"
+      (click)="selectMenu('our-picks')"
+    >
+      Our Picks
+    </button>
+    <button
+      class="top-nav-item"
+      [class.active]="currentMenu === 'dashboard'"
+      (click)="selectMenu('dashboard')"
+    >
+      Dashboard
+    </button>
+    <button
+      class="top-nav-item"
+      [class.active]="currentMenu === 'watchlists'"
+      (click)="selectMenu('watchlists')"
+    >
+      Watchlists
+    </button>
+    <button
+      class="top-nav-item"
+      [class.active]="currentMenu === 'portfolio'"
+      (click)="selectMenu('portfolio')"
+    >
+      Portfolio
+    </button>
+    <button
+      class="top-nav-item"
+      [class.active]="currentMenu === 'alerts'"
+      (click)="selectMenu('alerts')"
+    >
+      Alerts
+    </button>
+  </nav>
 
   <section class="profile-panel" *ngIf="profileOpen">
     <div class="profile-header">
@@ -238,6 +276,70 @@
       </button>
     </section>
 
+    <section class="news-panel" *ngIf="currentMenu === 'market-news'">
+      <section class="info-card" *ngIf="!isDescriptionHidden(currentMenu)">
+        <div class="info-icon">{{ screens[currentMenu]?.accent }}</div>
+        <div>
+          <div class="info-title">{{ getDescriptionTitle(currentMenu) }}</div>
+          <div class="info-text">{{ getDescriptionText(currentMenu) }}</div>
+        </div>
+        <button class="info-close" (click)="hideDescription(currentMenu)">✕</button>
+      </section>
+
+      <div class="news-header">
+        <button class="ghost" (click)="loadNews()">Refresh</button>
+      </div>
+
+      <mat-tab-group
+        class="news-tabs"
+        [selectedIndex]="newsTabCategories.indexOf(selectedNewsCategory)"
+        (selectedIndexChange)="onNewsTabChange($event)"
+        animationDuration="0ms"
+      >
+        <mat-tab *ngFor="let cat of newsTabCategories">
+          <ng-template mat-tab-label>
+            {{ cat === 'all' ? 'All' : (cat | titlecase) }}
+          </ng-template>
+        </mat-tab>
+      </mat-tab-group>
+
+      <div class="muted" *ngIf="newsLoading">Loading news…</div>
+      <div class="error" *ngIf="newsError">{{ newsError }}</div>
+
+      <div class="news-category" *ngFor="let block of filteredNewsBlocks">
+        <div class="news-category-title">{{ block.category | titlecase }}</div>
+        <div class="news-grid">
+          <article class="news-card" *ngFor="let n of block.articles" (click)="openNewsArticle(n)">
+            <img *ngIf="n.image" [src]="n.image" alt="" />
+            <div class="news-content">
+              <div class="news-headline">
+                <span class="news-link">{{ n.headline }}</span>
+              </div>
+              <div class="news-meta">
+                {{ n.source || 'Finnhub' }} · {{ n.datetime * 1000 | date: 'medium' }}
+              </div>
+              <div class="news-summary" *ngIf="n.summary" [innerHTML]="n.summary"></div>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="empty" *ngIf="!newsLoading && !newsBlocks.length">
+        No news yet. Try refreshing.
+      </div>
+
+      <div class="news-modal" *ngIf="selectedNewsUrl">
+        <div class="news-modal-backdrop" (click)="closeNewsArticle()"></div>
+        <div class="news-modal-body">
+          <div class="news-modal-header">
+            <div class="news-modal-title">{{ selectedNewsTitle }}</div>
+            <button class="icon-btn" (click)="closeNewsArticle()">✕</button>
+          </div>
+          <iframe [src]="selectedNewsUrl" title="News article"></iframe>
+        </div>
+      </div>
+    </section>
+
     <section class="watchlist-page" *ngIf="currentMenu === 'watchlists'">
       <div class="watchlist-hero">
         <div>
@@ -317,7 +419,7 @@
 
     <section
       class="info-card"
-      *ngIf="currentMenu !== 'watchlists' && !isDescriptionHidden(currentMenu)"
+      *ngIf="currentMenu !== 'watchlists' && currentMenu !== 'market-news' && !isDescriptionHidden(currentMenu)"
     >
       <div class="info-icon">{{ screens[currentMenu]?.accent }}</div>
       <div>
@@ -336,39 +438,37 @@
       {{ screens[currentMenu]?.accent }} Show description
     </button>
 
-    <section
-      class="stock-card"
-      *ngFor="let s of getStocks(currentMenu)"
-      [class.hidden]="currentMenu === 'watchlists'"
-    >
-      <div class="stock-head">
-        <div>
-          <div class="stock-symbol">{{ s.symbol }}</div>
-          <div class="stock-name">{{ s.name }}</div>
+    <ng-container *ngIf="currentMenu !== 'watchlists' && currentMenu !== 'market-news'">
+      <section class="stock-card" *ngFor="let s of getStocks(currentMenu)">
+        <div class="stock-head">
+          <div>
+            <div class="stock-symbol">{{ s.symbol }}</div>
+            <div class="stock-name">{{ s.name }}</div>
+          </div>
+          <div class="stock-price">{{ s.price }}</div>
         </div>
-        <div class="stock-price">{{ s.price }}</div>
-      </div>
-      <div class="metric-grid">
-        <div class="metric-col">
-          <div class="metric-title">LONG-TERM</div>
-          <div class="metric" *ngFor="let m of s.longTerm">
-            <span>{{ m.label }}</span>
-            <span class="metric-value" [class.up]="m.trend === 'up'" [class.down]="m.trend === 'down'">
-              {{ m.trend === 'up' ? '▲' : m.trend === 'down' ? '▼' : '' }} {{ m.value }}
-            </span>
+        <div class="metric-grid">
+          <div class="metric-col">
+            <div class="metric-title">LONG-TERM</div>
+            <div class="metric" *ngFor="let m of s.longTerm">
+              <span>{{ m.label }}</span>
+              <span class="metric-value" [class.up]="m.trend === 'up'" [class.down]="m.trend === 'down'">
+                {{ m.trend === 'up' ? '▲' : m.trend === 'down' ? '▼' : '' }} {{ m.value }}
+              </span>
+            </div>
+          </div>
+          <div class="metric-col">
+            <div class="metric-title">SHORT-TERM</div>
+            <div class="metric" *ngFor="let m of s.shortTerm">
+              <span>{{ m.label }}</span>
+              <span class="metric-value" [class.up]="m.trend === 'up'" [class.down]="m.trend === 'down'">
+                {{ m.trend === 'up' ? '▲' : m.trend === 'down' ? '▼' : '' }} {{ m.value }}
+              </span>
+            </div>
           </div>
         </div>
-        <div class="metric-col">
-          <div class="metric-title">SHORT-TERM</div>
-          <div class="metric" *ngFor="let m of s.shortTerm">
-            <span>{{ m.label }}</span>
-            <span class="metric-value" [class.up]="m.trend === 'up'" [class.down]="m.trend === 'down'">
-              {{ m.trend === 'up' ? '▲' : m.trend === 'down' ? '▼' : '' }} {{ m.value }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
+    </ng-container>
   </ng-template>
 
   <footer

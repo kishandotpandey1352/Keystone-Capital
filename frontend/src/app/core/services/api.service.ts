@@ -10,6 +10,27 @@ export interface Watchlist {
   created_at?: string | null;
 }
 
+export interface NewsArticle {
+  id: number;
+  category: string;
+  datetime: number;
+  headline: string;
+  image?: string | null;
+  related?: string | null;
+  source?: string | null;
+  summary?: string | null;
+  url: string;
+}
+
+export interface NewsCategoryBlock {
+  category: string;
+  articles: NewsArticle[];
+}
+
+export interface HomeNewsResponse {
+  categories: NewsCategoryBlock[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   constructor(private http: HttpClient) {}
@@ -36,6 +57,18 @@ export class ApiService {
   deleteWatchlist(watchlistId: number) {
     return this.http.delete<{ status: string }>(
       `${environment.apiBaseUrl}/watchlists/${watchlistId}`
+    );
+  }
+
+  getHomeNews(limit = 10, maxCategories = 4) {
+    return this.http.get<HomeNewsResponse>(
+      `${environment.apiBaseUrl}/news/home`,
+      {
+        params: {
+          limit,
+          max_categories: maxCategories,
+        },
+      }
     );
   }
 }

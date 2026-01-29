@@ -1,8 +1,9 @@
 import time
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from app.api.routes import watchlists, signals
+from app.api.routes import watchlists, signals, news
 from shared.db.session import get_db
 from shared.models.watchlist import Watchlist
 from shared.db.base import Base
@@ -13,12 +14,24 @@ from sqlalchemy.exc import OperationalError
 app = FastAPI()
 api_router = APIRouter(prefix="/api/v1")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # app = FastAPI(title="Alerts MVP API")
 
 # --------------------
 # Routers
 # --------------------
 api_router.include_router(signals.router, tags=["signals"])
+api_router.include_router(news.router, tags=["news"])
 
 # --------------------
 # Health checks

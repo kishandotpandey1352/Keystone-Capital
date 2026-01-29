@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PLATFORM_ID } from '@angular/core';
@@ -7,7 +8,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 // Update the path below to the correct location of api.service.ts if different
 // Update the path below to the correct location of api.service.ts if different
 // Update the path below to the correct location of api.service.ts if different
-import { ApiService, Watchlist } from '../../core/services/api.service';
+import { ApiService, Watchlist, NewsCategoryBlock } from '../../core/services/api.service';
 // If the above import fails, try correcting the path, for example:
 // import { ApiService, Watchlist } from '../../../core/services/api.service';
 // or
@@ -32,6 +33,13 @@ export class AppShellComponent implements OnInit {
   newWatchlistName = '';
   isLoading = false;
   errorMsg = '';
+
+  newsBlocks: NewsCategoryBlock[] = [];
+  newsLoading = false;
+  newsError = '';
+  selectedNewsCategory = 'all';
+  selectedNewsUrl: SafeResourceUrl | null = null;
+  selectedNewsTitle = '';
 
   watchlistSearch = '';
   watchlistListSearch = '';
@@ -192,7 +200,7 @@ export class AppShellComponent implements OnInit {
       description:
         'Higher Upside Breakout scores indicate a larger chance of a sharp move upwards in price any time within the next year or two.',
       accent: '⬆',
-      tabs: ['Highest', 'Lowest'],
+      tabs: ['Bullish - Long', 'Bullish - Short', 'Bearish - Long', 'Bearish - Short'],
     },
     'downside-breakout': {
       title: 'Downside Breakout',
@@ -202,7 +210,7 @@ export class AppShellComponent implements OnInit {
       description:
         'Lower scores reduce breakdown risk. Use to screen for downside momentum candidates.',
       accent: '⬇',
-      tabs: ['Highest', 'Lowest'],
+      tabs: ['Bullish - Long', 'Bullish - Short', 'Bearish - Long', 'Bearish - Short'],
     },
     profitability: {
       title: 'Profitability',
@@ -211,7 +219,7 @@ export class AppShellComponent implements OnInit {
       descriptionTitle: 'Profitability',
       description: 'How likely the company is to be profitable over the next few years.',
       accent: '$',
-      tabs: ['Highest', 'Lowest'],
+      tabs: ['Bullish - Long', 'Bullish - Short', 'Bearish - Long', 'Bearish - Short'],
     },
     'market-similarity': {
       title: 'Market Similarity',
@@ -220,7 +228,7 @@ export class AppShellComponent implements OnInit {
       descriptionTitle: 'Market Similarity',
       description: 'Measures similarity to top-performing peers and momentum clusters.',
       accent: '⛰',
-      tabs: ['Highest', 'Lowest'],
+      tabs: ['Bullish - Long', 'Bullish - Short', 'Bearish - Long', 'Bearish - Short'],
     },
     growth: {
       title: 'Growth',
@@ -229,7 +237,7 @@ export class AppShellComponent implements OnInit {
       descriptionTitle: 'Growth',
       description: 'Projected growth across revenue, margins, and demand.',
       accent: '📈',
-      tabs: ['Highest', 'Lowest'],
+      tabs: ['Bullish - Long', 'Bullish - Short', 'Bearish - Long', 'Bearish - Short'],
     },
     'net-options': {
       title: 'Net Options Sentiment',
@@ -239,7 +247,7 @@ export class AppShellComponent implements OnInit {
       description:
         'Quantity of Call and Put Options as well as the difference in options prices.',
       accent: '⚙',
-      tabs: ['Highest', 'Lowest'],
+      tabs: ['Bullish - Long', 'Bullish - Short', 'Bearish - Long', 'Bearish - Short'],
     },
     'net-social': {
       title: 'Net Social Sentiment',
@@ -248,7 +256,7 @@ export class AppShellComponent implements OnInit {
       descriptionTitle: 'Net Social Sentiment',
       description: 'Measures social chatter strength and direction.',
       accent: '💬',
-      tabs: ['Highest', 'Lowest'],
+      tabs: ['Bullish - Long', 'Bullish - Short', 'Bearish - Long', 'Bearish - Short'],
     },
     'technical-flow': {
       title: 'Technical Flow',
@@ -257,7 +265,7 @@ export class AppShellComponent implements OnInit {
       descriptionTitle: 'Technical Flow',
       description: 'Signals derived from momentum, volume, and volatility.',
       accent: '📊',
-      tabs: ['Highest', 'Lowest'],
+      tabs: ['Bullish - Long', 'Bullish - Short', 'Bearish - Long', 'Bearish - Short'],
     },
     'dark-pool': {
       title: 'Dark Pool Rating',
@@ -266,7 +274,7 @@ export class AppShellComponent implements OnInit {
       descriptionTitle: 'Dark Pool Rating',
       description: 'Tracks off-exchange accumulation and large block activity.',
       accent: '▵',
-      tabs: ['Highest', 'Lowest'],
+      tabs: ['Bullish - Long', 'Bullish - Short', 'Bearish - Long', 'Bearish - Short'],
     },
     'short-pressure': {
       title: 'Short Pressure Rating',
@@ -275,7 +283,7 @@ export class AppShellComponent implements OnInit {
       descriptionTitle: 'Short Pressure Rating',
       description: 'Indicates probability of short squeeze over the near term.',
       accent: '⚡',
-      tabs: ['Highest', 'Lowest'],
+      tabs: ['Bullish - Long', 'Bullish - Short', 'Bearish - Long', 'Bearish - Short'],
     },
     screeners: {
       title: 'Screeners',
@@ -385,7 +393,11 @@ export class AppShellComponent implements OnInit {
 
   private platformId = inject(PLATFORM_ID);
 
-  constructor(private api: ApiService, private ws: WsService) {}
+  constructor(
+    private api: ApiService,
+    private ws: WsService,
+    private sanitizer: DomSanitizer
+  ) {}
 
   ngOnInit(): void {
     this.api.health().subscribe({
@@ -394,6 +406,8 @@ export class AppShellComponent implements OnInit {
     });
 
     this.loadWatchlists();
+
+    this.loadNews();
 
     this.updateBottomTabSelection(this.currentMenu);
 
@@ -430,6 +444,9 @@ export class AppShellComponent implements OnInit {
     const tabs = this.screens[menuId]?.tabs;
     this.currentTab = tabs?.length ? tabs[0] : 'Highest';
     this.updateBottomTabSelection(menuId);
+    if (menuId === 'market-news') {
+      this.loadNews();
+    }
     this.closeSidebar();
     this.closeProfile();
   }
@@ -598,5 +615,56 @@ export class AppShellComponent implements OnInit {
       },
       error: () => (this.errorMsg = 'Failed to delete watchlist.'),
     });
+  }
+
+  loadNews() {
+    if (this.newsLoading) return;
+    this.newsLoading = true;
+    this.newsError = '';
+    this.api.getHomeNews(8, 4).subscribe({
+      next: (data) => {
+        this.newsBlocks = data?.categories ?? [];
+        if (!this.newsBlocks.length) {
+          this.selectedNewsCategory = 'all';
+        } else if (
+          this.selectedNewsCategory !== 'all' &&
+          !this.newsBlocks.some((b) => b.category === this.selectedNewsCategory)
+        ) {
+          this.selectedNewsCategory = 'all';
+        }
+      },
+      error: () => (this.newsError = 'Failed to load market news.'),
+      complete: () => (this.newsLoading = false),
+    });
+  }
+
+  onNewsTabChange(index: number) {
+    const categories = this.newsTabCategories;
+    this.selectedNewsCategory = categories[index] ?? 'all';
+  }
+
+  get newsTabCategories() {
+    return ['all', ...this.newsBlocks.map((b) => b.category)];
+  }
+
+  get filteredNewsBlocks() {
+    if (this.selectedNewsCategory === 'all') {
+      return this.newsBlocks;
+    }
+    return this.newsBlocks.filter(
+      (b) => b.category === this.selectedNewsCategory
+    );
+  }
+
+  openNewsArticle(article: { url: string; headline: string }) {
+    this.selectedNewsTitle = article.headline;
+    this.selectedNewsUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
+      article.url
+    );
+  }
+
+  closeNewsArticle() {
+    this.selectedNewsUrl = null;
+    this.selectedNewsTitle = '';
   }
 }

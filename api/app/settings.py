@@ -7,4 +7,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     jwt_secret: str = "change-me"
 
+    finnhub_api_key: str | None = None
+    finnhub_base_url: str = "https://finnhub.io/api/v1"
+
 settings = Settings()

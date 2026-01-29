@@ -10,3 +10,4 @@ alembic==1.14.0
 
 celery==5.3.6
 redis
+httpx==0.27.2
