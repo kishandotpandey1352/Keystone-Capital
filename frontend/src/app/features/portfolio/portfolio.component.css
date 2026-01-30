@@ -1,0 +1,184 @@
+.portfolio {
+  display: grid;
+  gap: 16px;
+}
+
+.portfolio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.portfolio-header h2 {
+  margin: 0 0 4px;
+}
+
+.portfolio-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.portfolio-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.form-grid label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.form-grid input,
+.form-grid select {
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  color: var(--text);
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.metric {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.metric.up {
+  color: #7dffbd;
+}
+
+.metric.down {
+  color: #ff9b9b;
+}
+
+.chart {
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  height: 240px;
+}
+
+.chart svg {
+  width: 100%;
+  height: 100%;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.positions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.positions-table th,
+.positions-table td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.positions-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.position-symbol {
+  font-weight: 600;
+}
+
+.trade-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+}
+
+.trade-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 8, 12, 0.75);
+  backdrop-filter: blur(6px);
+}
+
+.trade-dialog {
+  position: relative;
+  width: min(620px, 92vw);
+  background: linear-gradient(
+      135deg,
+      rgba(47, 124, 246, 0.18),
+      rgba(25, 195, 193, 0.18)
+    ),
+    rgba(12, 18, 26, 0.92);
+  border: 1px solid rgba(47, 124, 246, 0.4);
+  box-shadow: 0 24px 70px rgba(5, 8, 12, 0.55);
+  backdrop-filter: blur(8px);
+  border-radius: 18px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.trade-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.trade-header h3 {
+  margin: 0 0 4px;
+}
+
+.trade-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.trade-errors {
+  background: rgba(255, 91, 91, 0.12);
+  border: 1px solid rgba(255, 91, 91, 0.3);
+  color: #ff9b9b;
+  padding: 10px 12px;
+  border-radius: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.trade-dialog .form-grid input,
+.trade-dialog .form-grid select {
+  background: rgba(15, 23, 34, 0.9);
+  border: 1px solid rgba(47, 124, 246, 0.35);
+  color: var(--text);
+}
+
+.trade-dialog .form-grid input:focus,
+.trade-dialog .form-grid select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(47, 124, 246, 0.2);
+}

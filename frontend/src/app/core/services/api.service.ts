@@ -31,6 +31,28 @@ export interface HomeNewsResponse {
   categories: NewsCategoryBlock[];
 }
 
+export interface Portfolio {
+  id: number;
+  name: string;
+  created_at?: string | null;
+}
+
+export interface Position {
+  id: number;
+  portfolio_id: number;
+  symbol: string;
+  market: string;
+  quantity: number;
+  buy_price: number;
+  buy_date: string;
+  created_at?: string | null;
+}
+
+export interface PortfolioTimelinePoint {
+  date: string;
+  value: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   constructor(private http: HttpClient) {}
@@ -69,6 +91,43 @@ export class ApiService {
           max_categories: maxCategories,
         },
       }
+    );
+  }
+
+  createPortfolio(name: string) {
+    return this.http.post<Portfolio>(`${environment.apiBaseUrl}/portfolios`, { name });
+  }
+
+  listPortfolios() {
+    return this.http.get<Portfolio[]>(`${environment.apiBaseUrl}/portfolios`);
+  }
+
+  addPosition(portfolioId: number, payload: Omit<Position, 'id' | 'portfolio_id' | 'created_at'>) {
+    return this.http.post<Position>(
+      `${environment.apiBaseUrl}/portfolios/${portfolioId}/positions`,
+      payload
+    );
+  }
+
+  listPositions(portfolioId: number) {
+    return this.http.get<Position[]>(
+      `${environment.apiBaseUrl}/portfolios/${portfolioId}/positions`
+    );
+  }
+
+  getPriceOnDate(symbol: string, market: string, date: string) {
+    return this.http.get<{ symbol: string; date: string; close: number; source: string }>(
+      `${environment.apiBaseUrl}/portfolios/prices/close`,
+      {
+        params: { symbol, market, date },
+      }
+    );
+  }
+
+  getPortfolioTimeline(portfolioId: number, start: string, end: string) {
+    return this.http.get<PortfolioTimelinePoint[]>(
+      `${environment.apiBaseUrl}/portfolios/${portfolioId}/timeline`,
+      { params: { start, end } }
     );
   }
 }

@@ -1,9 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PLATFORM_ID } from '@angular/core';
 import { MatTabsModule } from '@angular/material/tabs';
+import { PortfolioComponent } from '../../features/portfolio/portfolio.component';
 
 // Update the path below to the correct location of api.service.ts if different
 // Update the path below to the correct location of api.service.ts if different
@@ -19,11 +20,11 @@ import { WsService } from '../../core/services/ws.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatTabsModule],
+  imports: [CommonModule, FormsModule, MatTabsModule, PortfolioComponent],
   templateUrl: './app-shell.component.html',
   styleUrls: ['./app-shell.component.css'],
 })
-export class AppShellComponent implements OnInit {
+export class AppShellComponent implements OnInit, OnDestroy {
   apiStatus = 'unknown';
   wsStatus = 'disconnected';
   lastMsg: any = null;
@@ -38,6 +39,9 @@ export class AppShellComponent implements OnInit {
   newsLoading = false;
   newsError = '';
   selectedNewsCategory = 'all';
+  lastNewsRefresh: Date | null = null;
+  private newsRefreshTimer?: number;
+  private readonly newsRefreshIntervalMs = 5 * 60 * 1000;
   selectedNewsUrl: SafeResourceUrl | null = null;
   selectedNewsTitle = '';
 
@@ -409,6 +413,10 @@ export class AppShellComponent implements OnInit {
 
     this.loadNews();
 
+    this.newsRefreshTimer = window.setInterval(() => {
+      this.loadNews();
+    }, this.newsRefreshIntervalMs);
+
     this.updateBottomTabSelection(this.currentMenu);
 
     if (isPlatformBrowser(this.platformId)) {
@@ -416,6 +424,12 @@ export class AppShellComponent implements OnInit {
         (msg) => (this.lastMsg = msg),
         (s) => (this.wsStatus = s)
       );
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.newsRefreshTimer) {
+      clearInterval(this.newsRefreshTimer);
     }
   }
 
@@ -624,6 +638,7 @@ export class AppShellComponent implements OnInit {
     this.api.getHomeNews(8, 4).subscribe({
       next: (data) => {
         this.newsBlocks = data?.categories ?? [];
+        this.lastNewsRefresh = new Date();
         if (!this.newsBlocks.length) {
           this.selectedNewsCategory = 'all';
         } else if (

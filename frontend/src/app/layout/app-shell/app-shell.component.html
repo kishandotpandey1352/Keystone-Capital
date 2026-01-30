@@ -161,6 +161,7 @@
     >
       Alerts
     </button>
+    <button class="top-nav-item more" (click)="toggleSidebar()">More</button>
   </nav>
 
   <section class="profile-panel" *ngIf="profileOpen">
@@ -276,6 +277,8 @@
       </button>
     </section>
 
+    <app-portfolio *ngIf="currentMenu === 'portfolio'"></app-portfolio>
+
     <section class="news-panel" *ngIf="currentMenu === 'market-news'">
       <section class="info-card" *ngIf="!isDescriptionHidden(currentMenu)">
         <div class="info-icon">{{ screens[currentMenu]?.accent }}</div>
@@ -287,7 +290,13 @@
       </section>
 
       <div class="news-header">
-        <button class="ghost" (click)="loadNews()">Refresh</button>
+        <div class="news-status">
+          <span class="muted">Auto-refresh every 5 min</span>
+          <span class="muted" *ngIf="lastNewsRefresh">
+            · Updated {{ lastNewsRefresh | date: 'shortTime' }}
+          </span>
+        </div>
+        <button class="icon-btn" (click)="loadNews()" aria-label="Refresh news">↻</button>
       </div>
 
       <mat-tab-group
@@ -419,7 +428,7 @@
 
     <section
       class="info-card"
-      *ngIf="currentMenu !== 'watchlists' && currentMenu !== 'market-news' && !isDescriptionHidden(currentMenu)"
+      *ngIf="currentMenu !== 'watchlists' && currentMenu !== 'market-news' && currentMenu !== 'portfolio' && !isDescriptionHidden(currentMenu)"
     >
       <div class="info-icon">{{ screens[currentMenu]?.accent }}</div>
       <div>
@@ -438,7 +447,7 @@
       {{ screens[currentMenu]?.accent }} Show description
     </button>
 
-    <ng-container *ngIf="currentMenu !== 'watchlists' && currentMenu !== 'market-news'">
+    <ng-container *ngIf="currentMenu !== 'watchlists' && currentMenu !== 'market-news' && currentMenu !== 'portfolio'">
       <section class="stock-card" *ngFor="let s of getStocks(currentMenu)">
         <div class="stock-head">
           <div>

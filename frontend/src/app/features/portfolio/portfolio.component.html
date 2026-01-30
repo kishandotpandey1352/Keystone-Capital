@@ -1,0 +1,130 @@
+<section class="portfolio">
+  <div class="portfolio-header">
+    <div>
+      <h2>Portfolio</h2>
+      <p>Track positions and performance over time.</p>
+    </div>
+    <div class="row">
+      <button class="ghost" (click)="loadTimeline()">Refresh chart</button>
+      <button class="primary" (click)="openTradeModal()">Add trade</button>
+    </div>
+  </div>
+
+  <div class="error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+  <div class="card">
+    <h3>Portfolio performance</h3>
+    <div class="summary-grid">
+      <div>
+        <div class="muted">Invested</div>
+        <div class="metric">{{ totalInvested | number: '1.2-2' }}</div>
+      </div>
+      <div>
+        <div class="muted">Latest value</div>
+        <div class="metric">{{ latestValue | number: '1.2-2' }}</div>
+      </div>
+      <div>
+        <div class="muted">Return</div>
+        <div class="metric" [class.up]="performancePct >= 0" [class.down]="performancePct < 0">
+          {{ performancePct | number: '1.2-2' }}%
+        </div>
+      </div>
+    </div>
+
+    <div class="chart" *ngIf="timeline.length; else emptyChart">
+      <svg viewBox="0 0 600 220" preserveAspectRatio="none">
+        <polyline [attr.points]="chartPoints" fill="none" stroke="url(#grad)" stroke-width="3"></polyline>
+        <defs>
+          <linearGradient id="grad" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#2f7cf6" />
+            <stop offset="100%" stop-color="#19c3c1" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <ng-template #emptyChart>
+      <div class="empty">Add positions to see performance.</div>
+    </ng-template>
+  </div>
+
+  <div class="card">
+    <h3>Positions</h3>
+    <div class="table-wrap" *ngIf="positions.length; else emptyPositions">
+      <table class="positions-table">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Market</th>
+            <th>Buy date</th>
+            <th>Qty</th>
+            <th>Buy price</th>
+            <th>Invested</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of positions">
+            <td class="position-symbol">{{ p.symbol }}</td>
+            <td>{{ p.market }}</td>
+            <td>{{ p.buy_date }}</td>
+            <td>{{ p.quantity }}</td>
+            <td>{{ p.buy_price | number: '1.2-2' }}</td>
+            <td>{{ p.quantity * p.buy_price | number: '1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #emptyPositions>
+      <div class="empty">No positions yet.</div>
+    </ng-template>
+  </div>
+
+  <div class="trade-modal" *ngIf="tradeModalOpen">
+    <div class="trade-backdrop" (click)="closeTradeModal()"></div>
+    <div class="trade-dialog">
+      <div class="trade-header">
+        <div>
+          <h3>Add trade</h3>
+          <p>Enter purchase details and fetch the price by date.</p>
+        </div>
+        <button class="icon-btn" (click)="closeTradeModal()">✕</button>
+      </div>
+
+      <div class="trade-errors" *ngIf="tradeErrors.length">
+        <div *ngFor="let err of tradeErrors">• {{ err }}</div>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Symbol
+          <input [(ngModel)]="symbol" placeholder="RELIANCE.NS / AAPL" />
+        </label>
+        <label>
+          Market
+          <select [(ngModel)]="market">
+            <option value="US">US</option>
+            <option value="IN">India</option>
+          </select>
+        </label>
+        <label>
+          Quantity
+          <input type="number" min="1" [(ngModel)]="quantity" />
+        </label>
+        <label>
+          Buy date
+          <input type="date" [(ngModel)]="buyDate" />
+        </label>
+        <label>
+          Buy price
+          <input type="number" min="0" step="0.01" [(ngModel)]="buyPrice" />
+        </label>
+        <div class="row">
+          <button class="ghost" (click)="fetchPrice()" [disabled]="priceLoading">
+            {{ priceLoading ? 'Fetching…' : 'Fetch price' }}
+          </button>
+          <button class="primary" (click)="addPosition()">Add</button>
+        </div>
+        <div class="muted">Dates must be trading days (no weekends/holidays).</div>
+      </div>
+    </div>
+  </div>
+</section>
