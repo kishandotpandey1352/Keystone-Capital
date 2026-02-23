@@ -53,6 +53,45 @@ export interface PortfolioTimelinePoint {
   value: number;
 }
 
+export interface SentimentDistribution {
+  positive: number;
+  neutral: number;
+  negative: number;
+}
+
+export interface SentimentHistoryPoint {
+  date: string;
+  score: number;
+}
+
+export interface PriceHistoryPoint {
+  date: string;
+  close: number;
+}
+
+export interface SentimentNewsItem {
+  headline: string;
+  summary: string;
+  source: string;
+  url: string;
+  datetime: number;
+  sentiment_score: number;
+  sentiment_label: string;
+}
+
+export interface SentimentAnalysisResponse {
+  ticker: string;
+  overall_score: number;
+  sentiment_label: string;
+  distribution: SentimentDistribution;
+  confidence: number;
+  sources_analyzed: number;
+  current_price: number | null;
+  price_history: PriceHistoryPoint[];
+  sentiment_history: SentimentHistoryPoint[];
+  news: SentimentNewsItem[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   constructor(private http: HttpClient) {}
@@ -128,6 +167,13 @@ export class ApiService {
     return this.http.get<PortfolioTimelinePoint[]>(
       `${environment.apiBaseUrl}/portfolios/${portfolioId}/timeline`,
       { params: { start, end } }
+    );
+  }
+
+  analyzeSentiment(ticker: string, limit = 12) {
+    return this.http.get<SentimentAnalysisResponse>(
+      `${environment.apiBaseUrl}/sentiment/analyze`,
+      { params: { ticker, limit } }
     );
   }
 }

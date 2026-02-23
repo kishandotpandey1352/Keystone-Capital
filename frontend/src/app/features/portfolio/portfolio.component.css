@@ -85,6 +85,40 @@
   height: 100%;
 }
 
+.chart-placeholder {
+  background: var(--card-2);
+  border: 1px dashed rgba(47, 124, 246, 0.35);
+  border-radius: 12px;
+  padding: 18px;
+  height: 240px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.chart-skeleton {
+  width: 100%;
+  height: 140px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  animation: chart-shimmer 2s infinite;
+}
+
+@keyframes chart-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
 .table-wrap {
   overflow-x: auto;
 }

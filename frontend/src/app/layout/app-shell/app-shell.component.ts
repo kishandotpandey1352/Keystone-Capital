@@ -1,15 +1,33 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  AfterViewInit,
+  ChangeDetectorRef,
+  NgZone,
+  inject,
+  ViewEncapsulation,
+} from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PLATFORM_ID } from '@angular/core';
 import { MatTabsModule } from '@angular/material/tabs';
 import { PortfolioComponent } from '../../features/portfolio/portfolio.component';
+import { DashboardComponent } from '../../features/dashboard/dashboard.component';
+import { WatchlistsComponent } from '../../features/watchlists/watchlists.component';
+import { MarketNewsComponent } from '../../features/market-news/market-news.component';
+import { NetSocialComponent } from '../../features/net-social/net-social.component';
 
 // Update the path below to the correct location of api.service.ts if different
 // Update the path below to the correct location of api.service.ts if different
 // Update the path below to the correct location of api.service.ts if different
-import { ApiService, Watchlist, NewsCategoryBlock } from '../../core/services/api.service';
+import {
+  ApiService,
+  Watchlist,
+  NewsCategoryBlock,
+  SentimentAnalysisResponse,
+} from '../../core/services/api.service';
 // If the above import fails, try correcting the path, for example:
 // import { ApiService, Watchlist } from '../../../core/services/api.service';
 // or
@@ -20,11 +38,21 @@ import { WsService } from '../../core/services/ws.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatTabsModule, PortfolioComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatTabsModule,
+    PortfolioComponent,
+    DashboardComponent,
+    WatchlistsComponent,
+    MarketNewsComponent,
+    NetSocialComponent,
+  ],
   templateUrl: './app-shell.component.html',
   styleUrls: ['./app-shell.component.css'],
+  encapsulation: ViewEncapsulation.None,
 })
-export class AppShellComponent implements OnInit, OnDestroy {
+export class AppShellComponent implements OnInit, OnDestroy, AfterViewInit {
   apiStatus = 'unknown';
   wsStatus = 'disconnected';
   lastMsg: any = null;
@@ -104,11 +132,18 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   selectedWatchlistId = 1;
 
+  sentimentWatchlistId = 1;
+  sentimentTicker = '';
+  sentimentLoading = false;
+  sentimentError = '';
+  sentimentData: SentimentAnalysisResponse | null = null;
+
   sidebarOpen = false;
   profileOpen = false;
   currentMenu = 'our-picks';
   currentTab = 'Short-Term Bull';
   selectedMenuIndex = 0;
+  selectedCountry: 'US' | 'IN' = 'US';
 
   private hiddenDescriptions: Record<string, boolean> = {};
 
@@ -260,7 +295,6 @@ export class AppShellComponent implements OnInit, OnDestroy {
       descriptionTitle: 'Net Social Sentiment',
       description: 'Measures social chatter strength and direction.',
       accent: '💬',
-      tabs: ['Bullish - Long', 'Bullish - Short', 'Bearish - Long', 'Bearish - Short'],
     },
     'technical-flow': {
       title: 'Technical Flow',
@@ -400,14 +434,18 @@ export class AppShellComponent implements OnInit, OnDestroy {
   constructor(
     private api: ApiService,
     private ws: WsService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private zone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.api.health().subscribe({
-      next: () => (this.apiStatus = 'ok'),
-      error: () => (this.apiStatus = 'fail'),
-    });
+    if (isPlatformBrowser(this.platformId)) {
+      const savedCountry = window.localStorage.getItem('selectedCountry');
+      if (savedCountry === 'US' || savedCountry === 'IN') {
+        this.selectedCountry = savedCountry;
+      }
+    }
 
     this.loadWatchlists();
 
@@ -419,11 +457,42 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
     this.updateBottomTabSelection(this.currentMenu);
 
+    if (this.localWatchlists.length) {
+      this.sentimentWatchlistId = this.localWatchlists[0].id;
+      this.syncSentimentTicker();
+    }
+
+  }
+
+  ngAfterViewInit(): void {
+    this.api.health().subscribe({
+      next: () =>
+        this.zone.run(() => {
+          this.apiStatus = 'ok';
+          this.cdr.detectChanges();
+        }),
+      error: () =>
+        this.zone.run(() => {
+          this.apiStatus = 'fail';
+          this.cdr.detectChanges();
+        }),
+    });
+
     if (isPlatformBrowser(this.platformId)) {
-      this.ws.connect(
-        (msg) => (this.lastMsg = msg),
-        (s) => (this.wsStatus = s)
-      );
+      setTimeout(() => {
+        this.ws.connect(
+          (msg) =>
+            this.zone.run(() => {
+              this.lastMsg = msg;
+              this.cdr.detectChanges();
+            }),
+          (s) =>
+            this.zone.run(() => {
+              this.wsStatus = s;
+              this.cdr.detectChanges();
+            })
+        );
+      }, 0);
     }
   }
 
@@ -433,12 +502,19 @@ export class AppShellComponent implements OnInit, OnDestroy {
     }
   }
 
-  send() {
-    this.ws.send(this.inputText);
+  sendWs(text: string) {
+    this.ws.send(text);
   }
 
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  openSidebarHover() {
+    if (this.sidebarOpen) return;
+    setTimeout(() => {
+      this.sidebarOpen = true;
+    }, 0);
   }
 
   toggleProfile() {
@@ -463,6 +539,13 @@ export class AppShellComponent implements OnInit, OnDestroy {
     }
     this.closeSidebar();
     this.closeProfile();
+  }
+
+  setCountry(country: 'US' | 'IN') {
+    this.selectedCountry = country;
+    if (isPlatformBrowser(this.platformId)) {
+      window.localStorage.setItem('selectedCountry', country);
+    }
   }
 
   onBottomTabChange(index: number) {
@@ -565,6 +648,32 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.selectedWatchlistId = id;
   }
 
+  onSentimentWatchlistChange(id: number) {
+    this.sentimentWatchlistId = id;
+    this.syncSentimentTicker();
+    this.sentimentData = null;
+    this.sentimentError = '';
+  }
+
+  onSentimentTickerChange(ticker: string) {
+    this.sentimentTicker = ticker;
+    this.sentimentData = null;
+    this.sentimentError = '';
+  }
+
+  analyzeSentiment() {
+    const ticker = this.sentimentTicker.trim().toUpperCase();
+    if (!ticker || this.sentimentLoading) return;
+
+    this.sentimentLoading = true;
+    this.sentimentError = '';
+    this.api.analyzeSentiment(ticker).subscribe({
+      next: (data) => (this.sentimentData = data),
+      error: () => (this.sentimentError = 'Failed to analyze sentiment.'),
+      complete: () => (this.sentimentLoading = false),
+    });
+  }
+
   addStockToWatchlist(stock: { symbol: string; name: string }) {
     const wl = this.selectedWatchlist;
     if (!wl) return;
@@ -576,6 +685,69 @@ export class AppShellComponent implements OnInit, OnDestroy {
     const wl = this.selectedWatchlist;
     if (!wl) return;
     wl.stocks = wl.stocks.filter((s) => s.symbol !== symbol);
+  }
+
+  get sentimentWatchlist() {
+    return this.localWatchlists.find((w) => w.id === this.sentimentWatchlistId);
+  }
+
+  get sentimentTickers() {
+    return this.sentimentWatchlist?.stocks ?? [];
+  }
+
+  get sentimentDistributionTotal() {
+    const dist = this.sentimentData?.distribution;
+    if (!dist) return 0;
+    return dist.positive + dist.neutral + dist.negative;
+  }
+
+  get sentimentScoreDisplay() {
+    if (!this.sentimentData) return '0.000';
+    return this.sentimentData.overall_score.toFixed(3);
+  }
+
+  get priceSeriesPath() {
+    return this.buildLinePath(
+      this.sentimentData?.price_history ?? [],
+      (point) => point.close
+    );
+  }
+
+  get sentimentSeriesPath() {
+    return this.buildLinePath(
+      this.sentimentData?.sentiment_history ?? [],
+      (point) => point.score
+    );
+  }
+
+  private syncSentimentTicker() {
+    const tickers = this.sentimentTickers;
+    this.sentimentTicker = tickers.length ? tickers[0].symbol : '';
+  }
+
+  private buildLinePath<T>(
+    data: T[],
+    valueSelector: (point: T) => number,
+    width = 320,
+    height = 110
+  ) {
+    if (!data.length) return '';
+    const values = data
+      .map((point) => Number(valueSelector(point)))
+      .filter((v) => Number.isFinite(v));
+    if (!values.length) return '';
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    const step = width / Math.max(values.length - 1, 1);
+
+    return values
+      .map((value, index) => {
+        const x = index * step;
+        const y = height - ((value - min) / range) * height;
+        return `${index === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
   }
 
   isDescriptionHidden(menuId: string): boolean {

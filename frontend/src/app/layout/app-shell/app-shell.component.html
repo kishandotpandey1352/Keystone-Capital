@@ -104,7 +104,7 @@
   </aside>
 
   <header class="topbar">
-    <button class="icon-btn menu-btn" (click)="toggleSidebar()" (mouseenter)="sidebarOpen = true">☰</button>
+    <button class="icon-btn menu-btn" (click)="toggleSidebar()" (mouseenter)="openSidebarHover()">☰</button>
     <div class="brand">
       <div class="logo">K</div>
       <div>
@@ -113,16 +113,37 @@
       </div>
     </div>
 
-    <div class="status">
-      <span class="pill" [class.ok]="apiStatus === 'ok'" [class.fail]="apiStatus === 'fail'">
-        API: {{ apiStatus }}
-      </span>
-      <span class="pill" [class.ok]="wsStatus === 'connected'" [class.fail]="wsStatus === 'error'">
-        WS: {{ wsStatus }}
-      </span>
-    </div>
+    <div class="topbar-actions">
+      <div class="status">
+        <span class="pill" [class.ok]="apiStatus === 'ok'" [class.fail]="apiStatus === 'fail'">
+          API: {{ apiStatus }}
+        </span>
+        <span class="pill" [class.ok]="wsStatus === 'connected'" [class.fail]="wsStatus === 'error'">
+          WS: {{ wsStatus }}
+        </span>
+      </div>
 
-    <button class="icon-btn profile-btn" (click)="toggleProfile()">👤</button>
+      <div class="country-toggle">
+        <button
+          class="country-btn"
+          [class.active]="selectedCountry === 'US'"
+          (click)="setCountry('US')"
+        >
+          <img class="country-flag" src="assets/flags/us.svg" alt="US" />
+          US
+        </button>
+        <button
+          class="country-btn"
+          [class.active]="selectedCountry === 'IN'"
+          (click)="setCountry('IN')"
+        >
+          <img class="country-flag" src="assets/flags/in.svg" alt="India" />
+          India
+        </button>
+      </div>
+
+      <button class="icon-btn profile-btn" (click)="toggleProfile()">👤</button>
+    </div>
   </header>
 
   <nav class="top-nav">
@@ -201,62 +222,7 @@
   </section>
 
   <ng-container *ngIf="currentMenu === 'dashboard'; else menuScreen">
-    <section class="hero">
-      <h1>Stay ahead with real-time signals</h1>
-      <p>Track watchlists, compute signals, and receive streaming alerts.</p>
-      <div class="hero-actions">
-        <button class="primary" (click)="loadWatchlists()">Refresh</button>
-        <button class="ghost" (click)="send()">Send test WS</button>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Create watchlist</h2>
-      <div class="row">
-        <input
-          [(ngModel)]="newWatchlistName"
-          placeholder="e.g. AI Leaders"
-          (keyup.enter)="createWatchlist()"
-        />
-        <button class="primary" (click)="createWatchlist()">Add</button>
-      </div>
-      <div class="hint">Use watchlists to group assets and run compute jobs.</div>
-    </section>
-
-    <section class="card">
-      <div class="card-header">
-        <h2>Watchlists</h2>
-        <span *ngIf="isLoading" class="muted">Loading…</span>
-      </div>
-
-      <div *ngIf="errorMsg" class="error">{{ errorMsg }}</div>
-
-      <div class="list" *ngIf="watchlists.length; else empty">
-        <div class="list-item" *ngFor="let w of watchlists">
-          <div class="list-main">
-            <div class="list-title">{{ w.name }}</div>
-            <div class="list-meta">#{{ w.id }} · created {{ w.created_at | date:'short' }}</div>
-          </div>
-          <div class="list-actions">
-            <button class="chip" (click)="computeSignal(w.id)">Compute</button>
-            <button class="chip danger" (click)="deleteWatchlist(w.id)">Delete</button>
-          </div>
-        </div>
-      </div>
-
-      <ng-template #empty>
-        <div class="empty">No watchlists yet. Create your first one above.</div>
-      </ng-template>
-    </section>
-
-    <section class="card">
-      <h2>WebSocket monitor</h2>
-      <div class="row">
-        <input [(ngModel)]="inputText" placeholder="message" />
-        <button class="ghost" (click)="send()">Send</button>
-      </div>
-      <pre class="ws-box">{{ lastMsg | json }}</pre>
-    </section>
+    <app-dashboard [lastMsg]="lastMsg" (sendWs)="sendWs($event)"></app-dashboard>
   </ng-container>
 
   <ng-template #menuScreen>
@@ -279,156 +245,16 @@
 
     <app-portfolio *ngIf="currentMenu === 'portfolio'"></app-portfolio>
 
-    <section class="news-panel" *ngIf="currentMenu === 'market-news'">
-      <section class="info-card" *ngIf="!isDescriptionHidden(currentMenu)">
-        <div class="info-icon">{{ screens[currentMenu]?.accent }}</div>
-        <div>
-          <div class="info-title">{{ getDescriptionTitle(currentMenu) }}</div>
-          <div class="info-text">{{ getDescriptionText(currentMenu) }}</div>
-        </div>
-        <button class="info-close" (click)="hideDescription(currentMenu)">✕</button>
-      </section>
+    <app-market-news *ngIf="currentMenu === 'market-news'"></app-market-news>
 
-      <div class="news-header">
-        <div class="news-status">
-          <span class="muted">Auto-refresh every 5 min</span>
-          <span class="muted" *ngIf="lastNewsRefresh">
-            · Updated {{ lastNewsRefresh | date: 'shortTime' }}
-          </span>
-        </div>
-        <button class="icon-btn" (click)="loadNews()" aria-label="Refresh news">↻</button>
-      </div>
+    <app-watchlists *ngIf="currentMenu === 'watchlists'"></app-watchlists>
 
-      <mat-tab-group
-        class="news-tabs"
-        [selectedIndex]="newsTabCategories.indexOf(selectedNewsCategory)"
-        (selectedIndexChange)="onNewsTabChange($event)"
-        animationDuration="0ms"
-      >
-        <mat-tab *ngFor="let cat of newsTabCategories">
-          <ng-template mat-tab-label>
-            {{ cat === 'all' ? 'All' : (cat | titlecase) }}
-          </ng-template>
-        </mat-tab>
-      </mat-tab-group>
+    <app-net-social *ngIf="currentMenu === 'net-social'"></app-net-social>
 
-      <div class="muted" *ngIf="newsLoading">Loading news…</div>
-      <div class="error" *ngIf="newsError">{{ newsError }}</div>
-
-      <div class="news-category" *ngFor="let block of filteredNewsBlocks">
-        <div class="news-category-title">{{ block.category | titlecase }}</div>
-        <div class="news-grid">
-          <article class="news-card" *ngFor="let n of block.articles" (click)="openNewsArticle(n)">
-            <img *ngIf="n.image" [src]="n.image" alt="" />
-            <div class="news-content">
-              <div class="news-headline">
-                <span class="news-link">{{ n.headline }}</span>
-              </div>
-              <div class="news-meta">
-                {{ n.source || 'Finnhub' }} · {{ n.datetime * 1000 | date: 'medium' }}
-              </div>
-              <div class="news-summary" *ngIf="n.summary" [innerHTML]="n.summary"></div>
-            </div>
-          </article>
-        </div>
-      </div>
-
-      <div class="empty" *ngIf="!newsLoading && !newsBlocks.length">
-        No news yet. Try refreshing.
-      </div>
-
-      <div class="news-modal" *ngIf="selectedNewsUrl">
-        <div class="news-modal-backdrop" (click)="closeNewsArticle()"></div>
-        <div class="news-modal-body">
-          <div class="news-modal-header">
-            <div class="news-modal-title">{{ selectedNewsTitle }}</div>
-            <button class="icon-btn" (click)="closeNewsArticle()">✕</button>
-          </div>
-          <iframe [src]="selectedNewsUrl" title="News article"></iframe>
-        </div>
-      </div>
-    </section>
-
-    <section class="watchlist-page" *ngIf="currentMenu === 'watchlists'">
-      <div class="watchlist-hero">
-        <div>
-          <h2>Your watchlists</h2>
-          <p>Track groups, add tickers, and keep your ideas organized.</p>
-        </div>
-        <button class="primary">New Watchlist</button>
-      </div>
-
-      <div class="watchlist-grid">
-        <div class="watchlist-panel">
-          <div class="panel-title">My Watchlists</div>
-          <div class="panel-search">
-            <input
-              [(ngModel)]="watchlistListSearch"
-              placeholder="Search watchlists"
-            />
-          </div>
-          <div class="watchlist-list">
-            <button
-              class="watchlist-card"
-              *ngFor="let wl of filteredWatchlists"
-              [class.active]="selectedWatchlistId === wl.id"
-              (click)="selectWatchlist(wl.id)"
-            >
-              <div class="watchlist-name">
-                {{ wl.name }}
-                <span class="privacy" *ngIf="wl.isPrivate">Private</span>
-              </div>
-              <div class="watchlist-desc">{{ wl.description }}</div>
-              <div class="watchlist-meta">{{ wl.stocks.length }} stocks</div>
-            </button>
-          </div>
-        </div>
-
-        <div class="watchlist-panel">
-          <div class="panel-title">Holdings</div>
-          <div class="panel-search">
-            <input [(ngModel)]="holdingsSearch" placeholder="Search holdings" />
-          </div>
-          <div class="holding-list" *ngIf="selectedWatchlist">
-            <div class="holding" *ngFor="let s of filteredHoldings">
-              <div>
-                <div class="holding-symbol">{{ s.symbol }}</div>
-                <div class="holding-name">{{ s.name }}</div>
-              </div>
-              <button class="chip danger" (click)="removeStockFromWatchlist(s.symbol)">
-                Remove
-              </button>
-            </div>
-            <div *ngIf="!selectedWatchlist.stocks.length" class="empty">
-              This watchlist is empty. Add tickers from the search panel.
-            </div>
-            <div *ngIf="selectedWatchlist.stocks.length && !filteredHoldings.length" class="empty">
-              No holdings match your search.
-            </div>
-          </div>
-        </div>
-
-        <div class="watchlist-panel">
-          <div class="panel-title">Find tickers</div>
-          <div class="row">
-            <input [(ngModel)]="watchlistSearch" placeholder="Search by symbol or name" />
-          </div>
-          <div class="search-results">
-            <div class="search-item" *ngFor="let s of filteredStocks">
-              <div>
-                <div class="holding-symbol">{{ s.symbol }}</div>
-                <div class="holding-name">{{ s.name }}</div>
-              </div>
-              <button class="chip" (click)="addStockToWatchlist(s)">Add</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <section
       class="info-card"
-      *ngIf="currentMenu !== 'watchlists' && currentMenu !== 'market-news' && currentMenu !== 'portfolio' && !isDescriptionHidden(currentMenu)"
+      *ngIf="currentMenu !== 'watchlists' && currentMenu !== 'market-news' && currentMenu !== 'portfolio' && currentMenu !== 'net-social' && !isDescriptionHidden(currentMenu)"
     >
       <div class="info-icon">{{ screens[currentMenu]?.accent }}</div>
       <div>
@@ -440,14 +266,14 @@
 
     <button
       class="info-toggle"
-      *ngIf="currentMenu !== 'watchlists' && isDescriptionHidden(currentMenu)"
+      *ngIf="currentMenu !== 'watchlists' && currentMenu !== 'net-social' && isDescriptionHidden(currentMenu)"
       (click)="showDescription(currentMenu)"
       (mouseenter)="showDescription(currentMenu)"
     >
       {{ screens[currentMenu]?.accent }} Show description
     </button>
 
-    <ng-container *ngIf="currentMenu !== 'watchlists' && currentMenu !== 'market-news' && currentMenu !== 'portfolio'">
+    <ng-container *ngIf="currentMenu !== 'watchlists' && currentMenu !== 'market-news' && currentMenu !== 'portfolio' && currentMenu !== 'net-social'">
       <section class="stock-card" *ngFor="let s of getStocks(currentMenu)">
         <div class="stock-head">
           <div>
@@ -490,7 +316,6 @@
       currentMenu === 'market-similarity' ||
       currentMenu === 'growth' ||
       currentMenu === 'net-options' ||
-      currentMenu === 'net-social' ||
       currentMenu === 'technical-flow' ||
       currentMenu === 'dark-pool' ||
       currentMenu === 'short-pressure'

@@ -1,0 +1,78 @@
+<section class="news-panel">
+  <section class="info-card" *ngIf="!descriptionHidden">
+    <div class="info-icon">📰</div>
+    <div>
+      <div class="info-title">What's moving</div>
+      <div class="info-text">Track headlines and catalysts across sectors and tickers.</div>
+    </div>
+    <button class="info-close" (click)="hideDescription()">✕</button>
+  </section>
+
+  <button
+    class="info-toggle"
+    *ngIf="descriptionHidden"
+    (click)="showDescription()"
+    (mouseenter)="showDescription()"
+  >
+    📰 Show description
+  </button>
+
+  <div class="news-header">
+    <div class="news-status">
+      <span class="muted">Auto-refresh every 5 min</span>
+      <span class="muted" *ngIf="lastNewsRefresh">
+        · Updated {{ lastNewsRefresh | date: 'shortTime' }}
+      </span>
+    </div>
+    <button class="icon-btn" (click)="loadNews()" aria-label="Refresh news">↻</button>
+  </div>
+
+  <mat-tab-group
+    class="news-tabs"
+    [selectedIndex]="newsTabCategories.indexOf(selectedNewsCategory)"
+    (selectedIndexChange)="onNewsTabChange($event)"
+    animationDuration="0ms"
+  >
+    <mat-tab *ngFor="let cat of newsTabCategories">
+      <ng-template mat-tab-label>
+        {{ cat === 'all' ? 'All' : (cat | titlecase) }}
+      </ng-template>
+    </mat-tab>
+  </mat-tab-group>
+
+  <div class="muted" *ngIf="newsLoading">Loading news…</div>
+  <div class="error" *ngIf="newsError">{{ newsError }}</div>
+
+  <div class="news-category" *ngFor="let block of filteredNewsBlocks">
+    <div class="news-category-title">{{ block.category | titlecase }}</div>
+    <div class="news-grid">
+      <article class="news-card" *ngFor="let n of block.articles" (click)="openNewsArticle(n)">
+        <img *ngIf="n.image" [src]="n.image" alt="" />
+        <div class="news-content">
+          <div class="news-headline">
+            <span class="news-link">{{ n.headline }}</span>
+          </div>
+          <div class="news-meta">
+            {{ n.source || 'Finnhub' }} · {{ n.datetime * 1000 | date: 'medium' }}
+          </div>
+          <div class="news-summary" *ngIf="n.summary" [innerHTML]="n.summary"></div>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <div class="empty" *ngIf="!newsLoading && !newsBlocks.length">
+    No news yet. Try refreshing.
+  </div>
+
+  <div class="news-modal" *ngIf="selectedNewsUrl">
+    <div class="news-modal-backdrop" (click)="closeNewsArticle()"></div>
+    <div class="news-modal-body">
+      <div class="news-modal-header">
+        <div class="news-modal-title">{{ selectedNewsTitle }}</div>
+        <button class="icon-btn" (click)="closeNewsArticle()">✕</button>
+      </div>
+      <iframe [src]="selectedNewsUrl" title="News article"></iframe>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,56 @@
+<section class="hero">
+  <h1>Stay ahead with real-time signals</h1>
+  <p>Track watchlists, compute signals, and receive streaming alerts.</p>
+  <div class="hero-actions">
+    <button class="primary" (click)="loadWatchlists()">Refresh</button>
+    <button class="ghost" (click)="send()">Send test WS</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Create watchlist</h2>
+  <div class="row">
+    <input
+      [(ngModel)]="newWatchlistName"
+      placeholder="e.g. AI Leaders"
+      (keyup.enter)="createWatchlist()"
+    />
+    <button class="primary" (click)="createWatchlist()">Add</button>
+  </div>
+  <div class="hint">Use watchlists to group assets and run compute jobs.</div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>Watchlists</h2>
+    <span *ngIf="isLoading" class="muted">Loading…</span>
+  </div>
+
+  <div *ngIf="errorMsg" class="error">{{ errorMsg }}</div>
+
+  <div class="list" *ngIf="watchlists.length; else empty">
+    <div class="list-item" *ngFor="let w of watchlists">
+      <div class="list-main">
+        <div class="list-title">{{ w.name }}</div>
+        <div class="list-meta">#{{ w.id }} · created {{ w.created_at | date:'short' }}</div>
+      </div>
+      <div class="list-actions">
+        <button class="chip" (click)="computeSignal(w.id)">Compute</button>
+        <button class="chip danger" (click)="deleteWatchlist(w.id)">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #empty>
+    <div class="empty">No watchlists yet. Create your first one above.</div>
+  </ng-template>
+</section>
+
+<section class="card">
+  <h2>WebSocket monitor</h2>
+  <div class="row">
+    <input [(ngModel)]="inputText" placeholder="message" />
+    <button class="ghost" (click)="send()">Send</button>
+  </div>
+  <pre class="ws-box">{{ lastMsg | json }}</pre>
+</section>

@@ -3,7 +3,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from app.api.routes import watchlists, signals, news, portfolio
+from app.api.routes import watchlists, signals, news, portfolio, sentiment
 from shared.db.session import get_db
 from shared.models.watchlist import Watchlist
 from shared.models.portfolio import Portfolio, PortfolioPosition
@@ -34,6 +34,7 @@ app.add_middleware(
 api_router.include_router(signals.router, tags=["signals"])
 api_router.include_router(news.router, tags=["news"])
 api_router.include_router(portfolio.router, tags=["portfolios"])
+api_router.include_router(sentiment.router, tags=["sentiment"])
 
 # --------------------
 # Health checks

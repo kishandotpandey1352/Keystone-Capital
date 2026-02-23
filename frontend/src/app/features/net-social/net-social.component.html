@@ -1,0 +1,334 @@
+<section class="sentiment-panel">
+  <div
+    class="sentiment-loading"
+    *ngIf="
+      (sentimentLoading && (selectedMode === 'dashboard' || selectedMode === 'single')) ||
+      (batchLoading && (selectedMode === 'batch' || selectedMode === 'report'))
+    "
+  >
+    <div class="sentiment-loading-backdrop"></div>
+    <div class="sentiment-loading-card" role="status" aria-live="polite">
+      <div class="spinner"></div>
+      <div class="loading-title">Analyzing markets</div>
+      <div class="loading-subtitle">Crunching signals and sentiment streams...</div>
+    </div>
+  </div>
+  <div class="sentiment-debug">
+    debug: sentimentLoading={{ sentimentLoading }} | batchLoading={{ batchLoading }}
+  </div>
+  <div
+    class="sentiment-hero"
+    [class.collapsed]="!showIntroDetails"
+    (mouseenter)="showIntroDetailsOnHover()"
+  >
+    <div class="sentiment-hero-header">
+      <div>
+        <div class="sentiment-title">Financial Sentiment Analyzer</div>
+        <div class="sentiment-subtitle">
+          Equity, commodities, forex, and crypto signals built for fast market reads.
+        </div>
+      </div>
+      <button class="hero-close" (click)="hideIntroDetails()" aria-label="Hide details">✕</button>
+    </div>
+    <div class="sentiment-bullets" *ngIf="showIntroDetails">
+      <span>Equity Markets (US, UK, India)</span>
+      <span>Commodities (Metals, Energy, Agriculture)</span>
+      <span>Forex (Majors, Minors, Exotics)</span>
+      <span>Crypto (Bitcoin, Ethereum, Altcoins)</span>
+    </div>
+    <div class="hero-hint" *ngIf="!showIntroDetails">Hover to show full description</div>
+  </div>
+
+  <div class="sentiment-modes">
+    <button
+      class="mode-btn"
+      [class.active]="selectedMode === 'dashboard'"
+      (click)="setMode('dashboard')"
+    >
+      Launch Interactive Dashboard
+    </button>
+    <button
+      class="mode-btn"
+      [class.active]="selectedMode === 'single'"
+      (click)="setMode('single')"
+    >
+      Analyze Single Asset
+    </button>
+    <button
+      class="mode-btn"
+      [class.active]="selectedMode === 'batch'"
+      (click)="setMode('batch')"
+    >
+      Batch Analyze Market
+    </button>
+    <button
+      class="mode-btn"
+      [class.active]="selectedMode === 'report'"
+      (click)="setMode('report')"
+    >
+      Generate Market Report
+    </button>
+    <button
+      class="mode-btn"
+      [class.active]="selectedMode === 'demo'"
+      (click)="setMode('demo')"
+    >
+      Run Quick Demo
+    </button>
+  </div>
+
+  <div class="sentiment-header" *ngIf="selectedMode === 'dashboard' || selectedMode === 'single'">
+    <div>
+      <h2>Sentiment Analysis</h2>
+      <p>Run the notebook-inspired sentiment model for selected tickers.</p>
+    </div>
+    <button class="primary" (click)="analyzeSentiment()" [disabled]="sentimentLoading || !sentimentTicker">
+      {{ sentimentLoading ? 'Analyzing…' : 'Analyze' }}
+    </button>
+  </div>
+
+  <div class="sentiment-controls">
+    <label>
+      Watchlist
+      <select
+        [ngModel]="sentimentWatchlistId"
+        (ngModelChange)="onSentimentWatchlistChange($event)"
+      >
+        <option *ngFor="let wl of localWatchlists" [ngValue]="wl.id">{{ wl.name }}</option>
+      </select>
+    </label>
+    <label *ngIf="selectedMode === 'dashboard' || selectedMode === 'single'">
+      Ticker
+      <ng-container *ngIf="sentimentTickers.length; else manualTicker">
+        <select
+          [ngModel]="sentimentTicker"
+          (ngModelChange)="onSentimentTickerChange($event)"
+        >
+          <option *ngFor="let s of sentimentTickers" [ngValue]="s.symbol">
+            {{ s.symbol }} - {{ s.name }}
+          </option>
+        </select>
+      </ng-container>
+      <ng-template #manualTicker>
+        <input
+          class="sentiment-input"
+          [ngModel]="sentimentTicker"
+          (ngModelChange)="onSentimentTickerChange($event)"
+          placeholder="Enter ticker (e.g. AAPL)"
+        />
+      </ng-template>
+    </label>
+    <div class="sentiment-status" *ngIf="sentimentError">{{ sentimentError }}</div>
+  </div>
+
+  <div class="sentiment-grid" *ngIf="(selectedMode === 'dashboard' || selectedMode === 'single') && sentimentData; else emptySentiment">
+    <div class="sentiment-card gauge-card">
+      <div class="sentiment-kicker">Signal Gauge</div>
+      <div class="gauge">
+        <svg viewBox="0 0 200 110" aria-hidden="true">
+          <path class="gauge-arc negative" d="M20,100 A80,80 0 0 1 80,20" />
+          <path class="gauge-arc neutral" d="M80,20 A80,80 0 0 1 120,20" />
+          <path class="gauge-arc positive" d="M120,20 A80,80 0 0 1 180,100" />
+        </svg>
+        <div class="gauge-needle" [style.transform]="'translateX(-50%) rotate(' + gaugeAngle + 'deg)'">
+          <span></span>
+        </div>
+        <div class="gauge-center"></div>
+        <div class="gauge-label">{{ gaugeLabel }}</div>
+      </div>
+      <div class="gauge-meta">
+        <span>Score {{ sentimentScoreDisplay }}</span>
+        <span>Sources {{ sentimentData.sources_analyzed }}</span>
+      </div>
+    </div>
+
+    <div class="sentiment-card">
+      <div class="sentiment-kicker">Overall</div>
+      <div class="sentiment-score">
+        <span class="sentiment-label">{{ sentimentData.sentiment_label }}</span>
+        <span class="sentiment-value">{{ sentimentScoreDisplay }}</span>
+      </div>
+      <div class="sentiment-meta">
+        <span>Sources: {{ sentimentData.sources_analyzed }}</span>
+        <span>Confidence: {{ sentimentData.confidence | number: '1.2-2' }}</span>
+      </div>
+      <div class="sentiment-meta" *ngIf="sentimentData.current_price !== null">
+        Current price: ${{ sentimentData.current_price | number: '1.2-2' }}
+      </div>
+    </div>
+
+    <div class="sentiment-card">
+      <div class="sentiment-kicker">Price Trend</div>
+      <svg viewBox="0 0 320 110" class="sentiment-chart" *ngIf="priceSeriesPath; else noPrice">
+        <path [attr.d]="priceSeriesPath" class="line"></path>
+      </svg>
+      <ng-template #noPrice>
+        <div class="empty">No price data available.</div>
+      </ng-template>
+    </div>
+
+    <div class="sentiment-card">
+      <div class="sentiment-kicker">Sentiment Trend</div>
+      <svg viewBox="0 0 320 110" class="sentiment-chart" *ngIf="sentimentSeriesPath; else noTrend">
+        <path [attr.d]="sentimentSeriesPath" class="line"></path>
+      </svg>
+      <ng-template #noTrend>
+        <div class="empty">No sentiment history available.</div>
+      </ng-template>
+    </div>
+
+    <div class="sentiment-card">
+      <div class="sentiment-kicker">Distribution</div>
+      <div class="distribution" *ngIf="sentimentDistributionTotal; else noDist">
+        <div class="distribution-row">
+          <span>Positive</span>
+          <div class="bar">
+            <div
+              class="fill positive"
+              [style.width.%]="(sentimentData.distribution.positive / sentimentDistributionTotal) * 100"
+            ></div>
+          </div>
+          <span>{{ sentimentData.distribution.positive }}</span>
+        </div>
+        <div class="distribution-row">
+          <span>Neutral</span>
+          <div class="bar">
+            <div
+              class="fill neutral"
+              [style.width.%]="(sentimentData.distribution.neutral / sentimentDistributionTotal) * 100"
+            ></div>
+          </div>
+          <span>{{ sentimentData.distribution.neutral }}</span>
+        </div>
+        <div class="distribution-row">
+          <span>Negative</span>
+          <div class="bar">
+            <div
+              class="fill negative"
+              [style.width.%]="(sentimentData.distribution.negative / sentimentDistributionTotal) * 100"
+            ></div>
+          </div>
+          <span>{{ sentimentData.distribution.negative }}</span>
+        </div>
+      </div>
+      <ng-template #noDist>
+        <div class="empty">No sentiment distribution available.</div>
+      </ng-template>
+    </div>
+
+    <div class="sentiment-card sentiment-news">
+      <div class="sentiment-kicker">Recent News</div>
+      <div class="news-list">
+        <article class="news-item" *ngFor="let item of sentimentData.news">
+          <div>
+            <div class="news-title">{{ item.headline }}</div>
+            <div class="news-meta">
+              {{ item.source || 'Finnhub' }} · {{ item.datetime * 1000 | date: 'short' }}
+            </div>
+            <div class="news-summary" *ngIf="item.summary">{{ item.summary }}</div>
+          </div>
+          <span
+            class="sentiment-pill"
+            [class.positive]="item.sentiment_label === 'Positive'"
+            [class.negative]="item.sentiment_label === 'Negative'"
+          >
+            {{ item.sentiment_label }} {{ item.sentiment_score | number: '1.2-2' }}
+          </span>
+          <a class="chip" [href]="item.url" target="_blank" rel="noopener">Open</a>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #emptySentiment>
+    <div class="empty" *ngIf="selectedMode === 'dashboard' || selectedMode === 'single'">
+      Select a watchlist and ticker to start analysis. If the watchlist has no tickers,
+      enter one manually above.
+    </div>
+  </ng-template>
+
+  <section class="batch-panel" *ngIf="selectedMode === 'batch' || selectedMode === 'report'">
+    <div class="batch-header">
+      <div>
+        <h3>Market Batch Analysis</h3>
+        <p>Run sentiment across a watchlist and compare scores.</p>
+      </div>
+      <div class="batch-actions">
+        <label>
+          Max tickers
+          <input type="number" min="1" max="20" [(ngModel)]="maxBatchSize" />
+        </label>
+        <button class="primary" (click)="runBatchAnalysis(false)" [disabled]="batchLoading">
+          {{ batchLoading ? 'Analyzing…' : 'Run Batch' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="sentiment-status" *ngIf="batchError">{{ batchError }}</div>
+
+    <div class="batch-stats" *ngIf="batchResults.length">
+      <div>
+        <div class="stat-label">Average Score</div>
+        <div class="stat-value">{{ batchAverageScore | number: '1.3-3' }}</div>
+      </div>
+      <div *ngIf="batchMostPositive">
+        <div class="stat-label">Most Positive</div>
+        <div class="stat-value">{{ batchMostPositive?.ticker }}</div>
+      </div>
+      <div *ngIf="batchMostNegative">
+        <div class="stat-label">Most Negative</div>
+        <div class="stat-value">{{ batchMostNegative?.ticker }}</div>
+      </div>
+    </div>
+
+    <div class="batch-chart" *ngIf="batchResults.length">
+      <div class="batch-row" *ngFor="let row of batchResults">
+        <div class="batch-ticker">{{ row.ticker }}</div>
+        <div class="batch-bar">
+          <div
+            class="batch-fill"
+            [class.positive]="row.score >= 0.25"
+            [class.negative]="row.score <= -0.25"
+            [style.width.%]="(row.score + 1) * 50"
+          ></div>
+        </div>
+        <div class="batch-score">{{ row.score | number: '1.3-3' }}</div>
+      </div>
+    </div>
+
+    <div class="batch-table" *ngIf="batchResults.length">
+      <div class="batch-table-head">
+        <span>Ticker</span>
+        <span>Label</span>
+        <span>Score</span>
+        <span>Price</span>
+      </div>
+      <div class="batch-table-row" *ngFor="let row of batchResults">
+        <span>{{ row.ticker }}</span>
+        <span>{{ row.label }}</span>
+        <span>{{ row.score | number: '1.3-3' }}</span>
+        <span>{{ row.price === null ? 'n/a' : ('$' + (row.price | number: '1.2-2')) }}</span>
+      </div>
+    </div>
+
+    <div class="report-panel" *ngIf="selectedMode === 'report'">
+      <div class="report-actions">
+        <button class="ghost" (click)="generateMarketReport()">Generate Report</button>
+        <button class="ghost" (click)="downloadReport()" [disabled]="!reportText">
+          Download Report
+        </button>
+      </div>
+      <pre class="report-box" *ngIf="reportText">{{ reportText }}</pre>
+    </div>
+  </section>
+
+  <section class="demo-panel" *ngIf="selectedMode === 'demo'">
+    <div>
+      <h3>Quick Demo</h3>
+      <p>Runs a short batch on a few tickers from the selected watchlist.</p>
+    </div>
+    <button class="primary" (click)="runBatchAnalysis(true)" [disabled]="batchLoading">
+      {{ batchLoading ? 'Analyzing…' : 'Run Demo' }}
+    </button>
+  </section>
+</section>

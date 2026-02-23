@@ -78,4 +78,11 @@ logged using gmail: kishan.pandey1352@gmail.com
 http://localhost:8000/api/v1/news/home?limit=5&max_categories=3
 
 
+## Docker run app
+docker-compose down -v
+docker-compose build --no-cache
+docker-compose up
+
+quick fixes only (hide bottom tabs on Net Social + empty-state improvements), or
+a full modular refactor into feature components (recommended)?
 

@@ -1,0 +1,71 @@
+<section class="watchlist-page">
+  <div class="watchlist-hero">
+    <div>
+      <h2>Your watchlists</h2>
+      <p>Track groups, add tickers, and keep your ideas organized.</p>
+    </div>
+    <button class="primary">New Watchlist</button>
+  </div>
+
+  <div class="watchlist-grid">
+    <div class="watchlist-panel">
+      <div class="panel-title">My Watchlists</div>
+      <div class="panel-search">
+        <input [(ngModel)]="watchlistListSearch" placeholder="Search watchlists" />
+      </div>
+      <div class="watchlist-list">
+        <button
+          class="watchlist-card"
+          *ngFor="let wl of filteredWatchlists"
+          [class.active]="selectedWatchlistId === wl.id"
+          (click)="selectWatchlist(wl.id)"
+        >
+          <div class="watchlist-name">
+            {{ wl.name }}
+            <span class="privacy" *ngIf="wl.isPrivate">Private</span>
+          </div>
+          <div class="watchlist-desc">{{ wl.description }}</div>
+          <div class="watchlist-meta">{{ wl.stocks.length }} stocks</div>
+        </button>
+      </div>
+    </div>
+
+    <div class="watchlist-panel">
+      <div class="panel-title">Holdings</div>
+      <div class="panel-search">
+        <input [(ngModel)]="holdingsSearch" placeholder="Search holdings" />
+      </div>
+      <div class="holding-list" *ngIf="selectedWatchlist">
+        <div class="holding" *ngFor="let s of filteredHoldings">
+          <div>
+            <div class="holding-symbol">{{ s.symbol }}</div>
+            <div class="holding-name">{{ s.name }}</div>
+          </div>
+          <button class="chip danger" (click)="removeStockFromWatchlist(s.symbol)">Remove</button>
+        </div>
+        <div *ngIf="!selectedWatchlist.stocks.length" class="empty">
+          This watchlist is empty. Add tickers from the search panel.
+        </div>
+        <div *ngIf="selectedWatchlist.stocks.length && !filteredHoldings.length" class="empty">
+          No holdings match your search.
+        </div>
+      </div>
+    </div>
+
+    <div class="watchlist-panel">
+      <div class="panel-title">Find tickers</div>
+      <div class="row">
+        <input [(ngModel)]="watchlistSearch" placeholder="Search by symbol or name" />
+      </div>
+      <div class="search-results">
+        <div class="search-item" *ngFor="let s of filteredStocks">
+          <div>
+            <div class="holding-symbol">{{ s.symbol }}</div>
+            <div class="holding-name">{{ s.name }}</div>
+          </div>
+          <button class="chip" (click)="addStockToWatchlist(s)">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
