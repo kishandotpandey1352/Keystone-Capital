@@ -22,8 +22,8 @@
    npm start
 
 ## API
-- Health: GET http://localhost:8000/health
-- WebSocket: ws://localhost:8000/ws
+- Health: GET http://localhost:8001/health
+- WebSocket: ws://localhost:8001/ws
 
 ## Architecture
 ![Architecture diagram](Architecture_diagram_day_2.1.svg)

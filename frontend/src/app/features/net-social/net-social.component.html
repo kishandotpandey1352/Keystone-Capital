@@ -1,10 +1,7 @@
 <section class="sentiment-panel">
   <div
     class="sentiment-loading"
-    *ngIf="
-      (sentimentLoading && (selectedMode === 'dashboard' || selectedMode === 'single')) ||
-      (batchLoading && (selectedMode === 'batch' || selectedMode === 'report'))
-    "
+    *ngIf="sentimentLoading"
   >
     <div class="sentiment-loading-backdrop"></div>
     <div class="sentiment-loading-card" role="status" aria-live="polite">
@@ -12,9 +9,6 @@
       <div class="loading-title">Analyzing markets</div>
       <div class="loading-subtitle">Crunching signals and sentiment streams...</div>
     </div>
-  </div>
-  <div class="sentiment-debug">
-    debug: sentimentLoading={{ sentimentLoading }} | batchLoading={{ batchLoading }}
   </div>
   <div
     class="sentiment-hero"
@@ -31,97 +25,65 @@
       <button class="hero-close" (click)="hideIntroDetails()" aria-label="Hide details">✕</button>
     </div>
     <div class="sentiment-bullets" *ngIf="showIntroDetails">
-      <span>Equity Markets (US, UK, India)</span>
-      <span>Commodities (Metals, Energy, Agriculture)</span>
-      <span>Forex (Majors, Minors, Exotics)</span>
-      <span>Crypto (Bitcoin, Ethereum, Altcoins)</span>
+      <span>Current coverage: US equities (NYSE/Nasdaq)</span>
+      <span>International exchanges coming soon</span>
+      <span>News + price signals for supported tickers</span>
+      <span>More asset classes planned</span>
     </div>
     <div class="hero-hint" *ngIf="!showIntroDetails">Hover to show full description</div>
   </div>
-
-  <div class="sentiment-modes">
+  <div class="sentiment-actions">
     <button
-      class="mode-btn"
-      [class.active]="selectedMode === 'dashboard'"
-      (click)="setMode('dashboard')"
+      class="ghost"
+      type="button"
+      [disabled]="!sentimentData"
+      (click)="downloadPdf()"
     >
-      Launch Interactive Dashboard
-    </button>
-    <button
-      class="mode-btn"
-      [class.active]="selectedMode === 'single'"
-      (click)="setMode('single')"
-    >
-      Analyze Single Asset
-    </button>
-    <button
-      class="mode-btn"
-      [class.active]="selectedMode === 'batch'"
-      (click)="setMode('batch')"
-    >
-      Batch Analyze Market
-    </button>
-    <button
-      class="mode-btn"
-      [class.active]="selectedMode === 'report'"
-      (click)="setMode('report')"
-    >
-      Generate Market Report
-    </button>
-    <button
-      class="mode-btn"
-      [class.active]="selectedMode === 'demo'"
-      (click)="setMode('demo')"
-    >
-      Run Quick Demo
+      Download PDF
     </button>
   </div>
 
-  <div class="sentiment-header" *ngIf="selectedMode === 'dashboard' || selectedMode === 'single'">
-    <div>
-      <h2>Sentiment Analysis</h2>
-      <p>Run the notebook-inspired sentiment model for selected tickers.</p>
-    </div>
-    <button class="primary" (click)="analyzeSentiment()" [disabled]="sentimentLoading || !sentimentTicker">
-      {{ sentimentLoading ? 'Analyzing…' : 'Analyze' }}
-    </button>
-  </div>
-
-  <div class="sentiment-controls">
+  <div class="sentiment-controls simple">
     <label>
-      Watchlist
-      <select
-        [ngModel]="sentimentWatchlistId"
-        (ngModelChange)="onSentimentWatchlistChange($event)"
-      >
-        <option *ngFor="let wl of localWatchlists" [ngValue]="wl.id">{{ wl.name }}</option>
-      </select>
-    </label>
-    <label *ngIf="selectedMode === 'dashboard' || selectedMode === 'single'">
       Ticker
-      <ng-container *ngIf="sentimentTickers.length; else manualTicker">
-        <select
-          [ngModel]="sentimentTicker"
-          (ngModelChange)="onSentimentTickerChange($event)"
-        >
-          <option *ngFor="let s of sentimentTickers" [ngValue]="s.symbol">
-            {{ s.symbol }} - {{ s.name }}
-          </option>
-        </select>
-      </ng-container>
-      <ng-template #manualTicker>
+      <div class="ticker-field">
         <input
           class="sentiment-input"
           [ngModel]="sentimentTicker"
           (ngModelChange)="onSentimentTickerChange($event)"
-          placeholder="Enter ticker (e.g. AAPL)"
+          (focus)="onTickerInputFocus()"
+          (blur)="onTickerInputBlur()"
+          placeholder="Enter ticker (e.g. NVDA)"
+          autocomplete="off"
         />
-      </ng-template>
+        <div
+          class="ticker-dropdown"
+          *ngIf="tickerDropdownOpen && (tickerSuggestions.length || tickerSearchLoading)"
+        >
+          <div class="ticker-loading" *ngIf="tickerSearchLoading">Searching...</div>
+          <button
+            class="ticker-option"
+            type="button"
+            *ngFor="let item of tickerSuggestions"
+            (mousedown)="onSelectTickerSuggestion(item)"
+          >
+            <span class="ticker-symbol">{{ item.symbol }}</span>
+            <span class="ticker-desc">{{ item.description || item.exchange }}</span>
+            <span class="ticker-exchange">{{ item.exchange }}</span>
+          </button>
+          <div class="ticker-empty" *ngIf="!tickerSearchLoading && !tickerSuggestions.length">
+            No matches
+          </div>
+        </div>
+      </div>
     </label>
+    <button class="primary" (click)="analyzeSentiment()" [disabled]="sentimentLoading || !sentimentTicker">
+      {{ sentimentLoading ? 'Analyzing…' : 'Analyze' }}
+    </button>
     <div class="sentiment-status" *ngIf="sentimentError">{{ sentimentError }}</div>
   </div>
 
-  <div class="sentiment-grid" *ngIf="(selectedMode === 'dashboard' || selectedMode === 'single') && sentimentData; else emptySentiment">
+  <div class="sentiment-grid" *ngIf="sentimentData; else emptySentiment">
     <div class="sentiment-card gauge-card">
       <div class="sentiment-kicker">Signal Gauge</div>
       <div class="gauge">
@@ -158,9 +120,119 @@
     </div>
 
     <div class="sentiment-card">
-      <div class="sentiment-kicker">Price Trend</div>
-      <svg viewBox="0 0 320 110" class="sentiment-chart" *ngIf="priceSeriesPath; else noPrice">
+      <div class="card-header">
+        <div class="sentiment-kicker">Price Trend</div>
+        <button
+          class="chart-zoom-btn"
+          type="button"
+          (click)="onOpenChartDialog('price')"
+        >
+          Zoom
+        </button>
+      </div>
+      <svg
+        viewBox="0 0 320 110"
+        class="sentiment-chart"
+        *ngIf="priceSeriesPath; else noPrice"
+        (mousemove)="onChartHover($event, 'price')"
+        (mouseleave)="onChartLeave('price')"
+        (dblclick)="onChartDoubleClick($event, 'price')"
+      >
+        <g class="chart-axes">
+          <g class="grid-lines">
+            <line
+              *ngFor="let tick of priceYAxisTicks"
+              [attr.x1]="chartPaddingLeft"
+              [attr.y1]="tick.y"
+              [attr.x2]="chartWidth - chartPaddingRight"
+              [attr.y2]="tick.y"
+            ></line>
+            <line
+              *ngFor="let tick of priceXAxisTicks"
+              [attr.x1]="tick.x"
+              [attr.y1]="chartPaddingTop"
+              [attr.x2]="tick.x"
+              [attr.y2]="chartHeight - chartPaddingBottom"
+            ></line>
+          </g>
+          <line
+            class="axis-line"
+            [attr.x1]="chartPaddingLeft"
+            [attr.y1]="chartPaddingTop"
+            [attr.x2]="chartPaddingLeft"
+            [attr.y2]="chartHeight - chartPaddingBottom"
+          ></line>
+          <line
+            class="axis-line"
+            [attr.x1]="chartPaddingLeft"
+            [attr.y1]="chartHeight - chartPaddingBottom"
+            [attr.x2]="chartWidth - chartPaddingRight"
+            [attr.y2]="chartHeight - chartPaddingBottom"
+          ></line>
+          <g class="axis-tick" *ngFor="let tick of priceYAxisTicks">
+            <line
+              [attr.x1]="chartPaddingLeft - 4"
+              [attr.y1]="tick.y"
+              [attr.x2]="chartPaddingLeft"
+              [attr.y2]="tick.y"
+            ></line>
+            <text
+              class="axis-label"
+              [attr.x]="chartPaddingLeft - 6"
+              [attr.y]="tick.y + 4"
+              text-anchor="end"
+            >
+              {{ tick.label }}
+            </text>
+          </g>
+          <g *ngFor="let label of priceXAxisLabels">
+            <text
+              class="axis-label axis-x-label"
+              [attr.x]="label.x"
+              [attr.y]="chartHeight - 4"
+              [attr.text-anchor]="label.anchor"
+            >
+              {{ label.label }}
+            </text>
+          </g>
+          <text class="axis-title" [attr.x]="chartWidth - 6" [attr.y]="chartHeight - 4">
+            Time
+          </text>
+          <text
+            class="axis-title"
+            [attr.x]="8"
+            [attr.y]="chartPaddingTop + 2"
+            transform="rotate(-90 8 10)"
+          >
+            Price
+          </text>
+        </g>
         <path [attr.d]="priceSeriesPath" class="line"></path>
+        <g *ngIf="chartHover.price as hover">
+          <line
+            class="chart-hover-line"
+            [attr.x1]="hover.x"
+            [attr.x2]="hover.x"
+            [attr.y1]="chartPaddingTop"
+            [attr.y2]="chartHeight - chartPaddingBottom"
+          ></line>
+          <circle class="chart-hover-point" [attr.cx]="hover.x" [attr.cy]="hover.y" r="3"></circle>
+          <g class="chart-tooltip">
+            <rect
+              class="chart-tooltip-bg"
+              [attr.x]="hover.boxX"
+              [attr.y]="hover.boxY"
+              [attr.width]="hover.boxWidth"
+              height="28"
+              rx="6"
+              ry="6"
+            ></rect>
+            <text class="chart-tooltip-text" [attr.x]="hover.boxX + 6" [attr.y]="hover.boxY + 11">
+              <tspan>{{ hover.label }}</tspan>
+              <tspan [attr.x]="hover.boxX + 6" [attr.y]="hover.boxY + 23">{{ hover.value }}</tspan>
+            </text>
+          </g>
+        </g>
       </svg>
       <ng-template #noPrice>
         <div class="empty">No price data available.</div>
@@ -168,9 +240,119 @@
     </div>
 
     <div class="sentiment-card">
-      <div class="sentiment-kicker">Sentiment Trend</div>
-      <svg viewBox="0 0 320 110" class="sentiment-chart" *ngIf="sentimentSeriesPath; else noTrend">
+      <div class="card-header">
+        <div class="sentiment-kicker">Sentiment Trend</div>
+        <button
+          class="chart-zoom-btn"
+          type="button"
+          (click)="onOpenChartDialog('sentiment')"
+        >
+          Zoom
+        </button>
+      </div>
+      <svg
+        viewBox="0 0 320 110"
+        class="sentiment-chart"
+        *ngIf="sentimentSeriesPath; else noTrend"
+        (mousemove)="onChartHover($event, 'sentiment')"
+        (mouseleave)="onChartLeave('sentiment')"
+        (dblclick)="onChartDoubleClick($event, 'sentiment')"
+      >
+        <g class="chart-axes">
+          <g class="grid-lines">
+            <line
+              *ngFor="let tick of sentimentYAxisTicks"
+              [attr.x1]="chartPaddingLeft"
+              [attr.y1]="tick.y"
+              [attr.x2]="chartWidth - chartPaddingRight"
+              [attr.y2]="tick.y"
+            ></line>
+            <line
+              *ngFor="let tick of sentimentXAxisTicks"
+              [attr.x1]="tick.x"
+              [attr.y1]="chartPaddingTop"
+              [attr.x2]="tick.x"
+              [attr.y2]="chartHeight - chartPaddingBottom"
+            ></line>
+          </g>
+          <line
+            class="axis-line"
+            [attr.x1]="chartPaddingLeft"
+            [attr.y1]="chartPaddingTop"
+            [attr.x2]="chartPaddingLeft"
+            [attr.y2]="chartHeight - chartPaddingBottom"
+          ></line>
+          <line
+            class="axis-line"
+            [attr.x1]="chartPaddingLeft"
+            [attr.y1]="chartHeight - chartPaddingBottom"
+            [attr.x2]="chartWidth - chartPaddingRight"
+            [attr.y2]="chartHeight - chartPaddingBottom"
+          ></line>
+          <g class="axis-tick" *ngFor="let tick of sentimentYAxisTicks">
+            <line
+              [attr.x1]="chartPaddingLeft - 4"
+              [attr.y1]="tick.y"
+              [attr.x2]="chartPaddingLeft"
+              [attr.y2]="tick.y"
+            ></line>
+            <text
+              class="axis-label"
+              [attr.x]="chartPaddingLeft - 6"
+              [attr.y]="tick.y + 4"
+              text-anchor="end"
+            >
+              {{ tick.label }}
+            </text>
+          </g>
+          <g *ngFor="let label of sentimentXAxisLabels">
+            <text
+              class="axis-label axis-x-label"
+              [attr.x]="label.x"
+              [attr.y]="chartHeight - 4"
+              [attr.text-anchor]="label.anchor"
+            >
+              {{ label.label }}
+            </text>
+          </g>
+          <text class="axis-title" [attr.x]="chartWidth - 6" [attr.y]="chartHeight - 4">
+            Time
+          </text>
+          <text
+            class="axis-title"
+            [attr.x]="8"
+            [attr.y]="chartPaddingTop + 2"
+            transform="rotate(-90 8 10)"
+          >
+            Sentiment
+          </text>
+        </g>
         <path [attr.d]="sentimentSeriesPath" class="line"></path>
+        <g *ngIf="chartHover.sentiment as hover">
+          <line
+            class="chart-hover-line"
+            [attr.x1]="hover.x"
+            [attr.x2]="hover.x"
+            [attr.y1]="chartPaddingTop"
+            [attr.y2]="chartHeight - chartPaddingBottom"
+          ></line>
+          <circle class="chart-hover-point" [attr.cx]="hover.x" [attr.cy]="hover.y" r="3"></circle>
+          <g class="chart-tooltip">
+            <rect
+              class="chart-tooltip-bg"
+              [attr.x]="hover.boxX"
+              [attr.y]="hover.boxY"
+              [attr.width]="hover.boxWidth"
+              height="28"
+              rx="6"
+              ry="6"
+            ></rect>
+            <text class="chart-tooltip-text" [attr.x]="hover.boxX + 6" [attr.y]="hover.boxY + 11">
+              <tspan>{{ hover.label }}</tspan>
+              <tspan [attr.x]="hover.boxX + 6" [attr.y]="hover.boxY + 23">{{ hover.value }}</tspan>
+            </text>
+          </g>
+        </g>
       </svg>
       <ng-template #noTrend>
         <div class="empty">No sentiment history available.</div>
@@ -225,7 +407,9 @@
             <div class="news-meta">
               {{ item.source || 'Finnhub' }} · {{ item.datetime * 1000 | date: 'short' }}
             </div>
-            <div class="news-summary" *ngIf="item.summary">{{ item.summary }}</div>
+            <div class="news-summary" *ngIf="newsSummary(item.summary)">
+              {{ newsSummary(item.summary) }}
+            </div>
           </div>
           <span
             class="sentiment-pill"
@@ -234,101 +418,255 @@
           >
             {{ item.sentiment_label }} {{ item.sentiment_score | number: '1.2-2' }}
           </span>
-          <a class="chip" [href]="item.url" target="_blank" rel="noopener">Open</a>
+          <a
+            class="chip"
+            [href]="normalizeNewsUrl(item.url)"
+            target="_blank"
+            rel="noopener"
+          >
+            Open
+          </a>
         </article>
       </div>
     </div>
   </div>
 
   <ng-template #emptySentiment>
-    <div class="empty" *ngIf="selectedMode === 'dashboard' || selectedMode === 'single'">
-      Select a watchlist and ticker to start analysis. If the watchlist has no tickers,
-      enter one manually above.
-    </div>
+    <div class="empty">Enter a ticker and run analysis to see sentiment details.</div>
   </ng-template>
 
-  <section class="batch-panel" *ngIf="selectedMode === 'batch' || selectedMode === 'report'">
-    <div class="batch-header">
-      <div>
-        <h3>Market Batch Analysis</h3>
-        <p>Run sentiment across a watchlist and compare scores.</p>
-      </div>
-      <div class="batch-actions">
-        <label>
-          Max tickers
-          <input type="number" min="1" max="20" [(ngModel)]="maxBatchSize" />
-        </label>
-        <button class="primary" (click)="runBatchAnalysis(false)" [disabled]="batchLoading">
-          {{ batchLoading ? 'Analyzing…' : 'Run Batch' }}
-        </button>
-      </div>
-    </div>
-
-    <div class="sentiment-status" *ngIf="batchError">{{ batchError }}</div>
-
-    <div class="batch-stats" *ngIf="batchResults.length">
-      <div>
-        <div class="stat-label">Average Score</div>
-        <div class="stat-value">{{ batchAverageScore | number: '1.3-3' }}</div>
-      </div>
-      <div *ngIf="batchMostPositive">
-        <div class="stat-label">Most Positive</div>
-        <div class="stat-value">{{ batchMostPositive?.ticker }}</div>
-      </div>
-      <div *ngIf="batchMostNegative">
-        <div class="stat-label">Most Negative</div>
-        <div class="stat-value">{{ batchMostNegative?.ticker }}</div>
-      </div>
-    </div>
-
-    <div class="batch-chart" *ngIf="batchResults.length">
-      <div class="batch-row" *ngFor="let row of batchResults">
-        <div class="batch-ticker">{{ row.ticker }}</div>
-        <div class="batch-bar">
-          <div
-            class="batch-fill"
-            [class.positive]="row.score >= 0.25"
-            [class.negative]="row.score <= -0.25"
-            [style.width.%]="(row.score + 1) * 50"
-          ></div>
+  <div
+    class="chart-dialog-backdrop"
+    *ngIf="activeChartDialog as dialog"
+    (click)="closeChartDialog()"
+  >
+    <div class="chart-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="chart-dialog-header">
+        <div class="chart-dialog-title">
+          {{ dialog === 'price' ? 'Price Trend' : 'Sentiment Trend' }}
         </div>
-        <div class="batch-score">{{ row.score | number: '1.3-3' }}</div>
-      </div>
-    </div>
-
-    <div class="batch-table" *ngIf="batchResults.length">
-      <div class="batch-table-head">
-        <span>Ticker</span>
-        <span>Label</span>
-        <span>Score</span>
-        <span>Price</span>
-      </div>
-      <div class="batch-table-row" *ngFor="let row of batchResults">
-        <span>{{ row.ticker }}</span>
-        <span>{{ row.label }}</span>
-        <span>{{ row.score | number: '1.3-3' }}</span>
-        <span>{{ row.price === null ? 'n/a' : ('$' + (row.price | number: '1.2-2')) }}</span>
-      </div>
-    </div>
-
-    <div class="report-panel" *ngIf="selectedMode === 'report'">
-      <div class="report-actions">
-        <button class="ghost" (click)="generateMarketReport()">Generate Report</button>
-        <button class="ghost" (click)="downloadReport()" [disabled]="!reportText">
-          Download Report
+        <button class="chart-dialog-close" type="button" (click)="closeChartDialog()">
+          Close
         </button>
       </div>
-      <pre class="report-box" *ngIf="reportText">{{ reportText }}</pre>
+      <ng-container *ngIf="dialog === 'price'">
+        <svg
+          viewBox="0 0 320 110"
+          class="sentiment-chart dialog-chart"
+          *ngIf="priceSeriesPath; else noPriceDialog"
+          (mousemove)="onChartHover($event, 'price')"
+          (mouseleave)="onChartLeave('price')"
+          (dblclick)="onChartDoubleClick($event, 'price')"
+        >
+          <g class="chart-axes">
+            <g class="grid-lines">
+              <line
+                *ngFor="let tick of priceYAxisTicks"
+                [attr.x1]="chartPaddingLeft"
+                [attr.y1]="tick.y"
+                [attr.x2]="chartWidth - chartPaddingRight"
+                [attr.y2]="tick.y"
+              ></line>
+              <line
+                *ngFor="let tick of priceXAxisTicks"
+                [attr.x1]="tick.x"
+                [attr.y1]="chartPaddingTop"
+                [attr.x2]="tick.x"
+                [attr.y2]="chartHeight - chartPaddingBottom"
+              ></line>
+            </g>
+            <line
+              class="axis-line"
+              [attr.x1]="chartPaddingLeft"
+              [attr.y1]="chartPaddingTop"
+              [attr.x2]="chartPaddingLeft"
+              [attr.y2]="chartHeight - chartPaddingBottom"
+            ></line>
+            <line
+              class="axis-line"
+              [attr.x1]="chartPaddingLeft"
+              [attr.y1]="chartHeight - chartPaddingBottom"
+              [attr.x2]="chartWidth - chartPaddingRight"
+              [attr.y2]="chartHeight - chartPaddingBottom"
+            ></line>
+            <g class="axis-tick" *ngFor="let tick of priceYAxisTicks">
+              <line
+                [attr.x1]="chartPaddingLeft - 4"
+                [attr.y1]="tick.y"
+                [attr.x2]="chartPaddingLeft"
+                [attr.y2]="tick.y"
+              ></line>
+              <text
+                class="axis-label"
+                [attr.x]="chartPaddingLeft - 6"
+                [attr.y]="tick.y + 4"
+                text-anchor="end"
+              >
+                {{ tick.label }}
+              </text>
+            </g>
+            <g *ngFor="let label of priceXAxisLabels">
+              <text
+                class="axis-label axis-x-label"
+                [attr.x]="label.x"
+                [attr.y]="chartHeight - 4"
+                [attr.text-anchor]="label.anchor"
+              >
+                {{ label.label }}
+              </text>
+            </g>
+            <text class="axis-title" [attr.x]="chartWidth - 6" [attr.y]="chartHeight - 4">
+              Time
+            </text>
+            <text
+              class="axis-title"
+              [attr.x]="8"
+              [attr.y]="chartPaddingTop + 2"
+              transform="rotate(-90 8 10)"
+            >
+              Price
+            </text>
+          </g>
+          <path [attr.d]="priceSeriesPath" class="line"></path>
+          <g *ngIf="chartHover.price as hover">
+            <line
+              class="chart-hover-line"
+              [attr.x1]="hover.x"
+              [attr.x2]="hover.x"
+              [attr.y1]="chartPaddingTop"
+              [attr.y2]="chartHeight - chartPaddingBottom"
+            ></line>
+            <circle class="chart-hover-point" [attr.cx]="hover.x" [attr.cy]="hover.y" r="3"></circle>
+            <g class="chart-tooltip">
+              <rect
+                class="chart-tooltip-bg"
+                [attr.x]="hover.boxX"
+                [attr.y]="hover.boxY"
+                [attr.width]="hover.boxWidth"
+                height="28"
+                rx="6"
+                ry="6"
+              ></rect>
+              <text class="chart-tooltip-text" [attr.x]="hover.boxX + 6" [attr.y]="hover.boxY + 11">
+                <tspan>{{ hover.label }}</tspan>
+                <tspan [attr.x]="hover.boxX + 6" [attr.y]="hover.boxY + 23">{{ hover.value }}</tspan>
+              </text>
+            </g>
+          </g>
+        </svg>
+        <ng-template #noPriceDialog>
+          <div class="empty">No price data available.</div>
+        </ng-template>
+      </ng-container>
+      <ng-container *ngIf="dialog === 'sentiment'">
+        <svg
+          viewBox="0 0 320 110"
+          class="sentiment-chart dialog-chart"
+          *ngIf="sentimentSeriesPath; else noTrendDialog"
+          (mousemove)="onChartHover($event, 'sentiment')"
+          (mouseleave)="onChartLeave('sentiment')"
+          (dblclick)="onChartDoubleClick($event, 'sentiment')"
+        >
+          <g class="chart-axes">
+            <g class="grid-lines">
+              <line
+                *ngFor="let tick of sentimentYAxisTicks"
+                [attr.x1]="chartPaddingLeft"
+                [attr.y1]="tick.y"
+                [attr.x2]="chartWidth - chartPaddingRight"
+                [attr.y2]="tick.y"
+              ></line>
+              <line
+                *ngFor="let tick of sentimentXAxisTicks"
+                [attr.x1]="tick.x"
+                [attr.y1]="chartPaddingTop"
+                [attr.x2]="tick.x"
+                [attr.y2]="chartHeight - chartPaddingBottom"
+              ></line>
+            </g>
+            <line
+              class="axis-line"
+              [attr.x1]="chartPaddingLeft"
+              [attr.y1]="chartPaddingTop"
+              [attr.x2]="chartPaddingLeft"
+              [attr.y2]="chartHeight - chartPaddingBottom"
+            ></line>
+            <line
+              class="axis-line"
+              [attr.x1]="chartPaddingLeft"
+              [attr.y1]="chartHeight - chartPaddingBottom"
+              [attr.x2]="chartWidth - chartPaddingRight"
+              [attr.y2]="chartHeight - chartPaddingBottom"
+            ></line>
+            <g class="axis-tick" *ngFor="let tick of sentimentYAxisTicks">
+              <line
+                [attr.x1]="chartPaddingLeft - 4"
+                [attr.y1]="tick.y"
+                [attr.x2]="chartPaddingLeft"
+                [attr.y2]="tick.y"
+              ></line>
+              <text
+                class="axis-label"
+                [attr.x]="chartPaddingLeft - 6"
+                [attr.y]="tick.y + 4"
+                text-anchor="end"
+              >
+                {{ tick.label }}
+              </text>
+            </g>
+            <g *ngFor="let label of sentimentXAxisLabels">
+              <text
+                class="axis-label axis-x-label"
+                [attr.x]="label.x"
+                [attr.y]="chartHeight - 4"
+                [attr.text-anchor]="label.anchor"
+              >
+                {{ label.label }}
+              </text>
+            </g>
+            <text class="axis-title" [attr.x]="chartWidth - 6" [attr.y]="chartHeight - 4">
+              Time
+            </text>
+            <text
+              class="axis-title"
+              [attr.x]="8"
+              [attr.y]="chartPaddingTop + 2"
+              transform="rotate(-90 8 10)"
+            >
+              Sentiment
+            </text>
+          </g>
+          <path [attr.d]="sentimentSeriesPath" class="line"></path>
+          <g *ngIf="chartHover.sentiment as hover">
+            <line
+              class="chart-hover-line"
+              [attr.x1]="hover.x"
+              [attr.x2]="hover.x"
+              [attr.y1]="chartPaddingTop"
+              [attr.y2]="chartHeight - chartPaddingBottom"
+            ></line>
+            <circle class="chart-hover-point" [attr.cx]="hover.x" [attr.cy]="hover.y" r="3"></circle>
+            <g class="chart-tooltip">
+              <rect
+                class="chart-tooltip-bg"
+                [attr.x]="hover.boxX"
+                [attr.y]="hover.boxY"
+                [attr.width]="hover.boxWidth"
+                height="28"
+                rx="6"
+                ry="6"
+              ></rect>
+              <text class="chart-tooltip-text" [attr.x]="hover.boxX + 6" [attr.y]="hover.boxY + 11">
+                <tspan>{{ hover.label }}</tspan>
+                <tspan [attr.x]="hover.boxX + 6" [attr.y]="hover.boxY + 23">{{ hover.value }}</tspan>
+              </text>
+            </g>
+          </g>
+        </svg>
+        <ng-template #noTrendDialog>
+          <div class="empty">No sentiment history available.</div>
+        </ng-template>
+      </ng-container>
     </div>
-  </section>
-
-  <section class="demo-panel" *ngIf="selectedMode === 'demo'">
-    <div>
-      <h3>Quick Demo</h3>
-      <p>Runs a short batch on a few tickers from the selected watchlist.</p>
-    </div>
-    <button class="primary" (click)="runBatchAnalysis(true)" [disabled]="batchLoading">
-      {{ batchLoading ? 'Analyzing…' : 'Run Demo' }}
-    </button>
-  </section>
+  </div>
 </section>

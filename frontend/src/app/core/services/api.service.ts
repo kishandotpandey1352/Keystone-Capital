@@ -79,6 +79,13 @@ export interface SentimentNewsItem {
   sentiment_label: string;
 }
 
+export interface TickerSuggestion {
+  symbol: string;
+  description: string;
+  exchange: string;
+  currency?: string | null;
+}
+
 export interface SentimentAnalysisResponse {
   ticker: string;
   overall_score: number;
@@ -174,6 +181,13 @@ export class ApiService {
     return this.http.get<SentimentAnalysisResponse>(
       `${environment.apiBaseUrl}/sentiment/analyze`,
       { params: { ticker, limit } }
+    );
+  }
+
+  searchTickers(query: string, limit = 20) {
+    return this.http.get<TickerSuggestion[]>(
+      `${environment.apiBaseUrl}/tickers/search`,
+      { params: { q: query, limit } }
     );
   }
 }
