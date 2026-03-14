@@ -20,7 +20,7 @@ import {
 })
 export class NetSocialComponent {
   showIntroDetails = true;
-  sentimentTicker = 'NVDA';
+  sentimentTicker = '';
   sentimentLoading = false;
   sentimentError = '';
   sentimentData: SentimentAnalysisResponse | null = null;

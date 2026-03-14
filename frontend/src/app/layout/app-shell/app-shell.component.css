@@ -13,6 +13,7 @@
 	--accent-2: #19c3c1;
 	--danger: #ff5b5b;
 	--border: #1c2836;
+	--panel: #0f1622;
 }
 
 body {
@@ -27,6 +28,7 @@ body {
 	max-width: 980px;
 	margin: 0 auto;
 	padding: 20px 16px 110px;
+	position: relative;
 }
 
 .topbar {
@@ -47,7 +49,80 @@ body {
 .topbar-actions {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: 8px;
+	flex-wrap: nowrap;
+	justify-content: flex-end;
+	white-space: nowrap;
+	overflow-x: auto;
+}
+
+.topbar-actions::-webkit-scrollbar {
+	height: 6px;
+}
+
+.topbar-actions::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.12);
+	border-radius: 999px;
+}
+
+.topbar-metrics {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: nowrap;
+}
+
+.topbar-actions > * {
+	flex: 0 0 auto;
+}
+
+.metric-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 12px;
+	border-radius: 999px;
+	border: 1px solid var(--border);
+	background: rgba(8, 14, 20, 0.8);
+	font-size: 12px;
+	color: var(--text);
+}
+
+.metric-pill.live {
+	border-color: rgba(55, 210, 160, 0.4);
+	color: #7dffbd;
+}
+
+.metric-pill.time {
+	color: var(--muted);
+}
+
+.metric-label {
+	font-weight: 600;
+	letter-spacing: 0.04em;
+}
+
+.metric-value {
+	font-weight: 700;
+	color: #ffd166;
+}
+
+.metric-tag {
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: rgba(255, 209, 102, 0.15);
+	color: #ffd166;
+	font-size: 10px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.metric-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #5fe1a5;
+	box-shadow: 0 0 6px rgba(95, 225, 165, 0.7);
 }
 
 .top-nav {
@@ -63,6 +138,132 @@ body {
 	z-index: 24;
 	background: linear-gradient(180deg, rgba(10, 17, 26, 0.98), rgba(10, 17, 26, 0.9));
 	border-bottom: 1px solid var(--border);
+}
+
+.signals-rail {
+	position: fixed;
+	top: 120px;
+	right: 20px;
+	width: 300px;
+	max-height: calc(100vh - 160px);
+	overflow: auto;
+	background: var(--panel);
+	border: 1px solid var(--border);
+	border-radius: 18px;
+	padding: 14px;
+	box-shadow: 0 24px 60px rgba(3, 12, 18, 0.6);
+	z-index: 20;
+}
+
+.signals-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.signals-title {
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	font-size: 12px;
+}
+
+.signals-subtitle {
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.signals-close {
+	background: transparent;
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 10px;
+	width: 28px;
+	height: 28px;
+	display: grid;
+	place-items: center;
+}
+
+.signals-card {
+	background: #0b111a;
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	padding: 12px;
+	display: grid;
+	gap: 10px;
+	margin-bottom: 12px;
+}
+
+.signals-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.signals-symbol {
+	font-weight: 700;
+	font-size: 16px;
+}
+
+.signals-meta {
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.signals-price {
+	font-weight: 700;
+}
+
+.signals-badges {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.badge {
+	padding: 4px 8px;
+	border-radius: 999px;
+	font-size: 11px;
+	border: 1px solid var(--border);
+}
+
+.badge.buy {
+	color: #7dffbd;
+	border-color: rgba(95, 225, 165, 0.4);
+}
+
+.badge.hold {
+	color: #c2b8a6;
+}
+
+.badge.soft {
+	color: var(--muted);
+}
+
+.signals-body {
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.signals-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	color: var(--muted);
+	font-size: 11px;
+}
+
+.ghost.tiny {
+	padding: 4px 10px;
+	font-size: 11px;
+}
+
+@media (max-width: 1100px) {
+	.signals-rail {
+		display: none;
+	}
 }
 
 .top-nav::-webkit-scrollbar {
@@ -728,8 +929,8 @@ body {
 	width: 320px;
 	max-width: 86vw;
 	height: 100vh;
-	background: #eef0f3;
-	color: #1b1f24;
+	background: linear-gradient(180deg, rgba(10, 17, 26, 0.98), rgba(10, 17, 26, 0.9));
+	color: var(--text);
 	padding: 18px 16px 24px;
 	transform: translateX(-100%);
 	transition: transform 0.25s ease;
@@ -768,7 +969,7 @@ body {
 }
 
 .sidebar .logo {
-	background: #1b1f24;
+    background: linear-gradient(135deg, #2f7cf6, #19c3c1);
 	color: #fff;
 }
 
@@ -781,9 +982,9 @@ body {
 
 .sidebar .icon-btn {
 	margin-left: auto;
-	background: #fff;
-	border-color: #d8dbe1;
-	color: #1b1f24;
+	background: var(--card);
+	border-color: var(--border);
+	color: var(--text);
 }
 
 .section {
@@ -794,7 +995,7 @@ body {
 	font-size: 12px;
 	text-transform: uppercase;
 	letter-spacing: 0.08em;
-	color: #7a7f86;
+	color: var(--muted);
 	margin-bottom: 10px;
 }
 
@@ -804,15 +1005,17 @@ body {
 	border-radius: 12px;
 	box-shadow: none;
 	font-weight: 600;
-	border: none;
+	border: 1px solid transparent;
 	text-align: left;
 	width: 100%;
+	color: var(--muted);
 }
 
 .menu-pill.active {
-	background: #fff;
-	color: #1b1f24;
-	box-shadow: 0 1px 0 #e2e4ea;
+	background: rgba(47, 124, 246, 0.18);
+	color: var(--text);
+	border-color: rgba(47, 124, 246, 0.45);
+	box-shadow: 0 8px 18px rgba(3, 12, 18, 0.45);
 }
 
 .menu-item {
@@ -821,7 +1024,7 @@ body {
 	gap: 10px;
 	padding: 10px 0;
 	font-weight: 600;
-	color: #2a2f36;
+	color: var(--text);
 	background: transparent;
 	border: none;
 	width: 100%;
@@ -829,12 +1032,12 @@ body {
 }
 
 .menu-item.active {
-	color: #111827;
-	background: #fff;
+	color: var(--text);
+	background: rgba(255, 255, 255, 0.06);
 	border-radius: 10px;
 	padding-left: 10px;
 	padding-right: 10px;
-	box-shadow: 0 1px 0 #e2e4ea;
+	box-shadow: 0 8px 18px rgba(3, 12, 18, 0.35);
 }
 
 .menu-item.active .dot {
@@ -1426,6 +1629,37 @@ button {
 
 	.row {
 		flex-direction: column;
+	}
+
+	.bottom-tabs {
+		left: 0;
+		right: 0;
+		bottom: 0;
+		top: auto;
+		width: 100%;
+		height: 80px;
+		transform: none;
+		padding: 0 12px 12px;
+	}
+
+	.bottom-tab-label {
+		flex-direction: column;
+		transform: none;
+	}
+
+	:host ::ng-deep .bottom-tab-group .mat-mdc-tab-header {
+		flex-direction: row;
+		height: auto;
+	}
+
+	:host ::ng-deep .bottom-tab-group .mat-mdc-tab-labels {
+		flex-direction: row;
+		gap: 8px;
+		justify-content: space-between;
+	}
+
+	:host ::ng-deep .bottom-tab-group .mat-mdc-tab-label-container {
+		width: 100%;
 	}
 
 	.watchlist-hero {

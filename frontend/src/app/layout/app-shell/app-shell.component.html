@@ -114,6 +114,18 @@
     </div>
 
     <div class="topbar-actions">
+      <div class="topbar-metrics">
+        <div class="metric-pill">
+          <span class="metric-label">GTI</span>
+          <span class="metric-value">71.4</span>
+          <span class="metric-tag">Elevated</span>
+        </div>
+        <div class="metric-pill live">
+          <span class="metric-dot"></span>
+          Live · 2 feeds
+        </div>
+        <div class="metric-pill time">04:24:48 UTC</div>
+      </div>
       <div class="status">
         <span class="pill" [class.ok]="apiStatus === 'ok'" [class.fail]="apiStatus === 'fail'">
           API: {{ apiStatus }}
@@ -141,8 +153,10 @@
           India
         </button>
       </div>
+      <div class="status">
+        <button class="icon-btn profile-btn" (click)="toggleProfile()">👤</button>
+      </div>
 
-      <button class="icon-btn profile-btn" (click)="toggleProfile()">👤</button>
     </div>
   </header>
 
@@ -184,6 +198,56 @@
     </button>
     <button class="top-nav-item more" (click)="toggleSidebar()">More</button>
   </nav>
+
+  <aside class="signals-rail" *ngIf="currentMenu === 'net-social'">
+    <div class="signals-header">
+      <div>
+        <div class="signals-title">Signals</div>
+        <div class="signals-subtitle">Live sentiment pulse</div>
+      </div>
+      <button class="signals-close" (click)="selectMenu('net-social')">✕</button>
+    </div>
+    <div class="signals-card">
+      <div class="signals-row">
+        <div>
+          <div class="signals-symbol">TSLA</div>
+          <div class="signals-meta">US equities</div>
+        </div>
+        <div class="signals-price">$187.20</div>
+      </div>
+      <div class="signals-badges">
+        <span class="badge buy">Positive</span>
+        <span class="badge soft">Confidence 0.62</span>
+      </div>
+      <div class="signals-body">
+        Social sentiment stabilizing with improving news flow and rising volume.
+      </div>
+      <div class="signals-footer">
+        <span>Updated 2m ago</span>
+        <button class="ghost tiny">View</button>
+      </div>
+    </div>
+    <div class="signals-card">
+      <div class="signals-row">
+        <div>
+          <div class="signals-symbol">NVDA</div>
+          <div class="signals-meta">AI leaders</div>
+        </div>
+        <div class="signals-price">$451.60</div>
+      </div>
+      <div class="signals-badges">
+        <span class="badge hold">Neutral</span>
+        <span class="badge soft">Confidence 0.48</span>
+      </div>
+      <div class="signals-body">
+        News momentum steady. Watch for earnings follow-through and macro risk.
+      </div>
+      <div class="signals-footer">
+        <span>Updated 6m ago</span>
+        <button class="ghost tiny">View</button>
+      </div>
+    </div>
+  </aside>
 
   <section class="profile-panel" *ngIf="profileOpen">
     <div class="profile-header">
